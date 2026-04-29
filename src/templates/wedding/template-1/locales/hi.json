@@ -1,0 +1,38 @@
+{
+  "language": {
+    "english": "English",
+    "telugu": "తెలుగు",
+    "hindi": "हिंदी"
+  },
+  "nav": {
+    "home": "होम",
+    "invitation": "आमंत्रण",
+    "ourStory": "हमारी कहानी",
+    "events": "स्थान"
+  },
+  "countdown": {
+    "days": "दिन",
+    "hours": "घंटे",
+    "minutes": "मिनट",
+    "seconds": "सेकंड"
+  },
+  "invitation": {
+    "greeting": "नमस्कार",
+    "signOff": "सप्रेम, परिवार"
+  },
+  "events": {
+    "sectionTitle": "स्थान",
+    "eventTitle": "कार्यक्रम",
+    "viewOnMap": "मैप पर देखें"
+  },
+  "ourStory": {
+    "defaultTitle": "हमारी कहानी",
+    "closing": "हमेशा"
+  },
+  "footer": {
+    "madeWith": "प्यार से बनाया गया",
+    "forSpecialDay": "हमारे खास दिन के लिए",
+    "allRights": "सर्वाधिकार सुरक्षित.",
+    "contact": "संपर्क"
+  }
+}

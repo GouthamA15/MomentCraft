@@ -1,0 +1,15 @@
+.template-one-root {
+  font-family: Inter, "Noto Sans Telugu", system-ui, sans-serif;
+  background-color: #fffff0;
+  color: #1f2937;
+}
+
+.template-one-root h1,
+.template-one-root h2,
+.template-one-root h3,
+.template-one-root h4,
+.template-one-root h5,
+.template-one-root h6 {
+  font-family: "Playfair Display", "Noto Serif Telugu", Georgia, serif;
+  color: #800000;
+}

@@ -1,0 +1,38 @@
+{
+  "language": {
+    "english": "English",
+    "telugu": "తెలుగు",
+    "hindi": "हिंदी"
+  },
+  "nav": {
+    "home": "ప్రారంభం",
+    "invitation": "ఆహ్వానం",
+    "ourStory": "మా కథ",
+    "events": "వేదిక"
+  },
+  "countdown": {
+    "days": "రోజులు",
+    "hours": "గంటలు",
+    "minutes": "నిమిషాలు",
+    "seconds": "సెకన్లు"
+  },
+  "invitation": {
+    "greeting": "నమస్కారం",
+    "signOff": "ప్రేమతో, కుటుంబ సభ్యులు"
+  },
+  "events": {
+    "sectionTitle": "వేదిక",
+    "eventTitle": "కార్యక్రమం",
+    "viewOnMap": "మ్యాప్‌లో చూడండి"
+  },
+  "ourStory": {
+    "defaultTitle": "మా కథ",
+    "closing": "శాశ్వతంగా"
+  },
+  "footer": {
+    "madeWith": "ప్రత్యేకమైన రోజు కోసం",
+    "forSpecialDay": "ప్రేమతో రూపొందించబడింది",
+    "allRights": "సర్వ హక్కులు ప్రత్యేకించబడినవి.",
+    "contact": "సంప్రదించండి"
+  }
+}

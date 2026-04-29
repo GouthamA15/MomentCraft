@@ -1,0 +1,254 @@
+-- =====================================================
+-- Core database schema (initial release) — future phases documented separately
+-- SUPABASE POSTGRESQL TABLE SETUP
+-- =====================================================
+
+-- Enable UUID extension
+create extension if not exists "pgcrypto";
+
+-- =====================================================
+-- 1. ADMINS
+-- =====================================================
+
+create table admins (
+    id uuid primary key default gen_random_uuid(),
+    full_name text not null,
+    email text unique not null,
+    password_hash text,
+    role text default 'super_admin',
+    is_active boolean default true,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+);
+
+-- =====================================================
+-- 2. VENDORS
+-- =====================================================
+
+create table vendors (
+    id uuid primary key default gen_random_uuid(),
+    business_name text not null,
+    owner_name text,
+    phone text,
+    email text,
+    address text,
+    notes text,
+    is_active boolean default true,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+);
+
+-- =====================================================
+-- 3. CLIENTS
+-- =====================================================
+
+create table clients (
+    id uuid primary key default gen_random_uuid(),
+    vendor_id uuid references vendors(id) on delete cascade,
+    client_name text not null,
+    phone text,
+    email text,
+    event_type text,
+    notes text,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+);
+
+-- =====================================================
+-- 4. TEMPLATES
+-- =====================================================
+
+create table templates (
+    id uuid primary key default gen_random_uuid(),
+    template_name text not null,
+    template_code text unique not null,
+    event_type text not null,
+    preview_image text,
+    template_path text,
+    is_active boolean default true,
+    created_at timestamptz default now()
+);
+
+-- =====================================================
+-- 5. PROJECTS
+-- =====================================================
+
+create table projects (
+    id uuid primary key default gen_random_uuid(),
+    vendor_id uuid references vendors(id) on delete set null,
+    client_id uuid references clients(id) on delete set null,
+    template_id uuid references templates(id) on delete set null,
+
+    project_name text not null,
+    slug text unique not null,
+
+    status text default 'draft',
+
+    event_date date,
+
+    publish_status boolean default false,
+    published_at timestamptz,
+
+    theme_color text,
+    font_family text,
+    background_music text,
+
+    seo_title text,
+    seo_description text,
+    og_image text,
+
+    expires_at timestamptz,
+
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+);
+
+-- =====================================================
+-- 6. PROJECT CONTENT
+-- =====================================================
+
+create table project_content (
+    id uuid primary key default gen_random_uuid(),
+    project_id uuid unique references projects(id) on delete cascade,
+
+    bride_name text,
+    groom_name text,
+
+    venue text,
+    event_time text,
+    event_address text,
+    google_map_link text,
+
+    welcome_message text,
+    story_text text,
+    rsvp_link text,
+
+    extra_json jsonb default '{}'::jsonb,
+
+    updated_at timestamptz default now()
+);
+
+-- =====================================================
+-- 7. PROJECT GALLERY
+-- =====================================================
+
+create table project_gallery (
+    id uuid primary key default gen_random_uuid(),
+    project_id uuid references projects(id) on delete cascade,
+
+    image_url text not null,
+    sort_order integer default 0,
+
+    created_at timestamptz default now()
+);
+
+-- =====================================================
+-- 8. PROJECT VERSIONS
+-- =====================================================
+
+create table project_versions (
+    id uuid primary key default gen_random_uuid(),
+    project_id uuid references projects(id) on delete cascade,
+
+    version_number integer not null,
+    change_notes text,
+    snapshot jsonb default '{}'::jsonb,
+
+    created_by uuid references admins(id) on delete set null,
+
+    created_at timestamptz default now()
+);
+
+-- =====================================================
+-- 9. REVISIONS
+-- =====================================================
+
+create table revisions (
+    id uuid primary key default gen_random_uuid(),
+    project_id uuid references projects(id) on delete cascade,
+
+    requested_by text,
+    revision_note text not null,
+
+    status text default 'pending',
+
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+);
+
+-- =====================================================
+-- 10. PROJECT ASSETS
+-- =====================================================
+
+create table project_assets (
+    id uuid primary key default gen_random_uuid(),
+    project_id uuid references projects(id) on delete cascade,
+
+    asset_type text,
+    file_url text not null,
+    file_name text,
+
+    created_at timestamptz default now()
+);
+
+
+
+## Table `project_content`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `uuid` | Primary |
+| `project_id` | `uuid` |  Nullable Unique |
+| `event_time` | `text` |  Nullable |
+| `event_address` | `text` |  Nullable |
+| `google_map_link` | `text` |  Nullable |
+| `rsvp_link` | `text` |  Nullable |
+| `extra_json` | `jsonb` |  Nullable |
+| `updated_at` | `timestamptz` |  Nullable |
+| `title_en` | `text` |  Nullable |
+| `title_te` | `text` |  Nullable |
+| `title_hi` | `text` |  Nullable |
+| `subtitle_en` | `text` |  Nullable |
+| `subtitle_te` | `text` |  Nullable |
+| `subtitle_hi` | `text` |  Nullable |
+| `bride_name_en` | `text` |  Nullable |
+| `bride_name_te` | `text` |  Nullable |
+| `bride_name_hi` | `text` |  Nullable |
+| `groom_name_en` | `text` |  Nullable |
+| `groom_name_te` | `text` |  Nullable |
+| `groom_name_hi` | `text` |  Nullable |
+| `welcome_message_en` | `text` |  Nullable |
+| `welcome_message_te` | `text` |  Nullable |
+| `welcome_message_hi` | `text` |  Nullable |
+| `story_title_en` | `text` |  Nullable |
+| `story_title_te` | `text` |  Nullable |
+| `story_title_hi` | `text` |  Nullable |
+| `story_text_en` | `text` |  Nullable |
+| `story_text_te` | `text` |  Nullable |
+| `story_text_hi` | `text` |  Nullable |
+| `venue_name_en` | `text` |  Nullable |
+| `venue_name_te` | `text` |  Nullable |
+| `venue_name_hi` | `text` |  Nullable |
+| `venue_address_en` | `text` |  Nullable |
+| `venue_address_te` | `text` |  Nullable |
+| `venue_address_hi` | `text` |  Nullable |
+| `event_time_en` | `text` |  Nullable |
+| `event_time_te` | `text` |  Nullable |
+| `event_time_hi` | `text` |  Nullable |
+| `event_date_text_en` | `text` |  Nullable |
+| `event_date_text_te` | `text` |  Nullable |
+| `event_date_text_hi` | `text` |  Nullable |
+| `rsvp_text_en` | `text` |  Nullable |
+| `rsvp_text_te` | `text` |  Nullable |
+| `rsvp_text_hi` | `text` |  Nullable |
+| `footer_message_en` | `text` |  Nullable |
+| `footer_message_te` | `text` |  Nullable |
+| `footer_message_hi` | `text` |  Nullable |
+| `family_message_en` | `text` |  Nullable |
+| `family_message_te` | `text` |  Nullable |
+| `family_message_hi` | `text` |  Nullable |
+| `custom_note_en` | `text` |  Nullable |
+| `custom_note_te` | `text` |  Nullable |
+| `custom_note_hi` | `text` |  Nullable |

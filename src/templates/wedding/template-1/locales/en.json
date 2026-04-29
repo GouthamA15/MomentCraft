@@ -1,0 +1,38 @@
+{
+  "language": {
+    "english": "English",
+    "telugu": "తెలుగు",
+    "hindi": "हिंदी"
+  },
+  "nav": {
+    "home": "Home",
+    "invitation": "Invitation",
+    "ourStory": "Our Story",
+    "events": "Venue"
+  },
+  "countdown": {
+    "days": "days",
+    "hours": "hours",
+    "minutes": "minutes",
+    "seconds": "seconds"
+  },
+  "invitation": {
+    "greeting": "Namaskaram",
+    "signOff": "With Love, The Families"
+  },
+  "events": {
+    "sectionTitle": "Venue",
+    "eventTitle": "Event",
+    "viewOnMap": "View on Map"
+  },
+  "ourStory": {
+    "defaultTitle": "Our Story",
+    "closing": "Forever"
+  },
+  "footer": {
+    "madeWith": "Made with",
+    "forSpecialDay": "for our special day",
+    "allRights": "All Rights Reserved.",
+    "contact": "Contact"
+  }
+}
