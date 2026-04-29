@@ -4,20 +4,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function HomePage() {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (user) {
-      // If user has an active session, send them straight to dashboard
-      redirect("/dashboard");
-    }
-  } catch (e) {
-    // if session check fails, fall back to rendering home page
-    // eslint-disable-next-line no-console
-    console.warn("session check failed on root route", e);
+  if (user) {
+    // If user has an active session, send them straight to dashboard
+    redirect("/dashboard");
   }
 
   return (

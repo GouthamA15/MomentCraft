@@ -102,26 +102,6 @@ export async function POST(request: Request) {
 
     const projectId = createdProject.id;
 
-    // Delivery workflow metadata (Phase 4)
-    const deliveryStatus = typeof body.delivery_status === "string" ? body.delivery_status.trim() : "";
-    if (deliveryStatus) {
-      const { error: contentError } = await supabase
-        .from("project_content")
-        .upsert(
-          {
-            project_id: projectId,
-            extra_json: { delivery_status: deliveryStatus },
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "project_id" },
-        );
-
-      if (contentError) {
-        await supabase.from("projects").delete().eq("id", projectId);
-        return NextResponse.json({ error: contentError.message }, { status: 500 });
-      }
-    }
-
     const translationsInput = body.translations as unknown;
     const translationRows: Array<{
       project_id: string;

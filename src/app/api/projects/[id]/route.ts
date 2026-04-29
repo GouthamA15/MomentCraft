@@ -87,34 +87,6 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: projectUpdateError.message }, { status: 500 });
     }
 
-    // Delivery workflow metadata (Phase 4)
-    const deliveryStatus = typeof body.delivery_status === "string" ? body.delivery_status.trim() : "";
-    if (deliveryStatus) {
-      const { data: existingContent } = await supabase
-        .from("project_content")
-        .select("extra_json")
-        .eq("project_id", id)
-        .maybeSingle();
-
-      const prev = (existingContent?.extra_json ?? {}) as Record<string, unknown>;
-      const next = { ...prev, delivery_status: deliveryStatus };
-
-      const { error: contentError } = await supabase
-        .from("project_content")
-        .upsert(
-          {
-            project_id: id,
-            extra_json: next,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "project_id" },
-        );
-
-      if (contentError) {
-        return NextResponse.json({ error: contentError.message }, { status: 500 });
-      }
-    }
-
     const translationsInput = body.translations as unknown;
     const toUpsert: Array<{
       project_id: string;

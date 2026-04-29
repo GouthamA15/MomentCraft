@@ -3,20 +3,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function LoginPage() {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (user) {
-      // Already authenticated — redirect to dashboard
-      redirect("/dashboard");
-    }
-  } catch (e) {
-    // ignore and render login
-    // eslint-disable-next-line no-console
-    console.warn("login guard check failed", e);
+  if (user) {
+    // Already authenticated — redirect to dashboard
+    redirect("/dashboard");
   }
 
   return (

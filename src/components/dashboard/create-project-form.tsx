@@ -105,6 +105,7 @@ export function CreateProjectForm({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [vendorsState, setVendorsState] = useState<VendorRow[]>(vendors);
   const [clientsState, setClientsState] = useState<ClientRow[]>(clients);
   const [projectName, setProjectName] = useState(initialData?.project_name ?? "");
@@ -245,6 +246,7 @@ export function CreateProjectForm({
   const handleSaveDraft = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
     if (!projectName.trim()) {
       setError("Project name is required.");
@@ -299,22 +301,33 @@ export function CreateProjectForm({
     const endpoint = isEdit ? `/api/projects/${projectId}` : "/api/projects";
     const method = isEdit ? "PATCH" : "POST";
 
-    const response = await fetch(endpoint, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const response = await fetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    const result = await response.json();
-    setLoading(false);
+      const result = await response.json();
 
-    if (!response.ok) {
-      setError(result.error || (projectId ? "Failed to update project." : "Failed to save draft."));
-      return;
+      if (!response.ok) {
+        setLoading(false);
+        setError(result.error || (projectId ? "Failed to update project." : "Failed to save draft."));
+        return;
+      }
+
+      // Show success message before redirecting
+      setSuccess(projectId ? "Project updated successfully!" : "Project saved successfully!");
+      setLoading(false);
+
+      // Redirect after brief delay to let user see success message
+      setTimeout(() => {
+        router.push("/dashboard/projects?saved=1");
+      }, 800);
+    } catch (err) {
+      setLoading(false);
+      setError(err instanceof Error ? err.message : "An unexpected error occurred.");
     }
-
-    router.push("/dashboard/projects?saved=1");
-    router.refresh();
   };
 
   return (
@@ -666,10 +679,11 @@ export function CreateProjectForm({
       ) : null}
 
       {error ? <p className="rounded-lg border border-red-400/30 bg-red-500/10 p-2 text-sm text-red-200">{error}</p> : null}
+      {success ? <p className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 p-2 text-sm text-emerald-200">{success}</p> : null}
 
       <div className="flex flex-wrap gap-2">
-        <Button disabled={loading || !templateId}>
-          {loading ? "Saving..." : projectId ? "Update Draft" : "Save Draft"}
+        <Button disabled={loading || !templateId} isLoading={loading}>
+          {projectId ? "Update Draft" : "Save Draft"}
         </Button>
         <Button
           type="button"
@@ -682,7 +696,7 @@ export function CreateProjectForm({
         >
           Preview
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.push("/dashboard/projects")}>
+        <Button type="button" variant="outline" disabled={loading} onClick={() => router.push("/dashboard/projects")}>
           Cancel
         </Button>
       </div>

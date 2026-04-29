@@ -52,7 +52,7 @@ export default async function EditProjectPage({ params }: PageProps) {
     );
   }
 
-  const [{ data: translationsRows }, { data: gallery }, { data: assets }, { data: projectContent }] = await Promise.all([
+  const [{ data: translationsRows }, { data: gallery }, { data: assets }] = await Promise.all([
     supabase
       .from("project_translations")
       .select("field_key,language_code,field_value")
@@ -66,7 +66,6 @@ export default async function EditProjectPage({ params }: PageProps) {
       .from("project_assets")
       .select("asset_type,file_url")
       .eq("project_id", projectId),
-    supabase.from("project_content").select("extra_json").eq("project_id", projectId).maybeSingle(),
   ]);
 
   const assetsList = (assets ?? []) as Array<{ asset_type: string | null; file_url: string }>;
@@ -74,9 +73,6 @@ export default async function EditProjectPage({ params }: PageProps) {
   const backgroundMusicAsset =
     assetsList.find((a) => a.asset_type === "background_music")?.file_url ?? null;
   const ogImageAsset = assetsList.find((a) => a.asset_type === "og_image")?.file_url ?? null;
-
-  const deliveryStatusRaw = (projectContent?.extra_json as any)?.delivery_status;
-  const deliveryStatus = typeof deliveryStatusRaw === "string" ? deliveryStatusRaw : null;
 
   const templates = (templatesData ?? []) as TemplateRow[];
   const vendors = (vendorsData ?? []) as VendorRow[];
@@ -127,7 +123,7 @@ export default async function EditProjectPage({ params }: PageProps) {
           vendor_id: project.vendor_id,
           client_id: project.client_id,
           template_id: project.template_id,
-          delivery_status: deliveryStatus,
+          delivery_status: null,
           theme_color: project.theme_color,
           font_family: project.font_family,
           background_music: project.background_music || backgroundMusicAsset,
