@@ -16,10 +16,13 @@ export function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError("");
+    setLoading(true);
 
     if (!email || !password) {
       setError("Email and password are required.");
+      setLoading(false);
       return;
     }
 
@@ -35,6 +38,7 @@ export function LoginForm() {
 
       if (!isFallbackMatch) {
         setError("Invalid credentials.");
+        setLoading(false);
         return;
       }
 
@@ -45,17 +49,22 @@ export function LoginForm() {
       return;
     }
 
-    setLoading(true);
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    setLoading(false);
+      setLoading(false);
 
-    if (signInError) {
-      setError(signInError.message);
+      if (signInError) {
+        setError(signInError.message);
+        return;
+      }
+    } catch (err: any) {
+      setLoading(false);
+      setError(err?.message || "Login failed.");
       return;
     }
 
@@ -88,8 +97,8 @@ export function LoginForm() {
         </button>
       </div>
       {error ? <p className="rounded-lg border border-red-300/30 bg-red-500/10 p-2 text-sm text-red-200">{error}</p> : null}
-      <Button className="h-10 w-full" disabled={loading}>
-        {loading ? "Signing in..." : "Login to Dashboard"}
+      <Button className="h-10 w-full" disabled={loading} isLoading={loading}>
+        {loading ? "Logging in..." : "Login to Dashboard"}
       </Button>
     </form>
   );

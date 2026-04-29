@@ -27,8 +27,9 @@ function getPublicPath(slug: string) {
 }
 
 function getPublicUrl(slug: string) {
-  if (typeof window === "undefined") return getPublicPath(slug);
-  return `${window.location.origin}${getPublicPath(slug)}`;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const baseUrl = siteUrl ? siteUrl.replace(/\/$/, "") : window.location.origin;
+  return `${baseUrl}${getPublicPath(slug)}`;
 }
 
 export function ProjectsTable({ initialProjects }: { initialProjects: ProjectListRow[] }) {

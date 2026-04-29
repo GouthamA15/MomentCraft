@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -24,7 +25,7 @@ const items = [
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
-export function Sidebar() {
+export const Sidebar = React.memo(function Sidebar() {
   const pathname = usePathname();
 
   return (
@@ -33,13 +34,14 @@ export function Sidebar() {
       <nav className="space-y-1">
         {items.map((item) => {
           const Icon = item.icon;
+          const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
                 "flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10",
-                pathname === item.href && "bg-cyan-400/20 text-cyan-100",
+                isActive && "bg-cyan-400/20 text-cyan-100",
               )}
             >
               <Icon className="h-4 w-4" />
@@ -55,4 +57,4 @@ export function Sidebar() {
       </form>
     </aside>
   );
-}
+});

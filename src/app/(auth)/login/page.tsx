@@ -1,14 +1,30 @@
 import { LoginForm } from "@/components/auth/login-form";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      // Already authenticated — redirect to dashboard
+      redirect("/dashboard");
+    }
+  } catch (e) {
+    // ignore and render login
+    // eslint-disable-next-line no-console
+    console.warn("login guard check failed", e);
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <section className="glass w-full max-w-md rounded-2xl p-6">
         <p className="text-xs uppercase tracking-[0.25em] text-cyan-100">Admin Access</p>
         <h1 className="mt-2 text-2xl font-semibold text-white">Sign in to Dashboard</h1>
-        <p className="mt-1 text-sm text-slate-300">
-          Authorized administrators only.
-        </p>
+        <p className="mt-1 text-sm text-slate-300">Authorized administrators only.</p>
         <div className="mt-6">
           <LoginForm />
         </div>

@@ -3,6 +3,8 @@
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
+import FetchInstrumentation from "@/components/perf/fetch-instrumentation";
+import RouteProgress from "@/components/perf/route-progress";
 
 function shouldHideDashboardChrome(pathname: string) {
   return (
@@ -20,6 +22,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="mx-auto grid min-h-screen max-w-7xl gap-4 p-4 lg:grid-cols-[260px_1fr]">
+      <FetchInstrumentation />
+      <RouteProgress />
       <Sidebar />
       <div className="space-y-4">
         <DashboardHeader />
