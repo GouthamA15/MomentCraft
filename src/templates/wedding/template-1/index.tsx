@@ -13,10 +13,10 @@ import TraditionalBackground from "./sections/TraditionalBackground";
 import MusicPlayer from "./MusicPlayer";
 import type { TemplateRenderProps } from "@/lib/template-registry";
 
-export default function TemplateOne({ projectData }: TemplateRenderProps) {
+export default function TemplateOne({ projectData, isPreview }: TemplateRenderProps) {
   return (
     <LanguageProvider projectData={projectData ?? null}>
-      <ProjectDataProvider projectData={projectData ?? null}>
+      <ProjectDataProvider projectData={projectData ?? null} isPreview={isPreview}>
         <div className="template-one-root min-h-screen font-sans text-gray-800 relative">
           <TraditionalBackground />
           <Navbar />

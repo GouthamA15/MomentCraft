@@ -18,7 +18,8 @@
   },
   "invitation": {
     "greeting": "Namaskaram",
-    "signOff": "With Love, The Families"
+    "signOff": "With Love, The Families",
+    "viewAlbum": "View Album"
   },
   "events": {
     "sectionTitle": "Venue",

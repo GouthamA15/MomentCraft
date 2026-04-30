@@ -11,18 +11,18 @@ const MusicPlayer = () => {
   const [currentUrl, setCurrentUrl] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { defaults, getField } = useLanguage();
-  const projectData = useProjectData();
+  const { projectData } = useProjectData();
 
   const groomName = getField("groom_name") || defaults?.couple?.groom || "";
   const brideName = getField("bride_name") || defaults?.couple?.bride || "";
   const venue = getField("venue_name") || defaults?.events?.[0]?.venue || "";
-  const dateLabel = projectData?.project.event_date
-    ? formatDisplayDate(projectData.project.event_date, "dd MMM yyyy")
+  const dateLabel = projectData?.project?.event_date
+    ? formatDisplayDate(projectData?.project?.event_date, "dd MMM yyyy")
     : defaults?.events?.[0]?.date || "";
 
   const musicUrl =
-    projectData?.project.background_music ||
-    projectData?.assets.find((a) => a.asset_type === "background_music")?.file_url ||
+    projectData?.project?.background_music ||
+    projectData?.assets?.find((a) => a.asset_type === "background_music")?.file_url ||
     "/Dheeni Premantara - Hesham Abdul Wahab (192k).mp3.mpeg";
 
   useEffect(() => {

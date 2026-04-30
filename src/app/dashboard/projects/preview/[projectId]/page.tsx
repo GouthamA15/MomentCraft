@@ -115,5 +115,5 @@ export default async function ProjectPreviewPage({ params }: PageProps) {
     assets: (assets ?? []) as Array<{ asset_type: string | null; file_url: string; file_name: string | null }>,
   };
 
-  return <TemplateComponent projectData={projectData} />;
+  return <TemplateComponent projectData={projectData} isPreview={true} />;
 }

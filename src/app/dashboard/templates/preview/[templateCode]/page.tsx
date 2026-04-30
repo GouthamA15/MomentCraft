@@ -58,5 +58,5 @@ export default async function TemplatePreviewPage({ params }: PageProps) {
     );
   }
 
-  return <TemplateComponent />;
+  return <TemplateComponent isPreview={true} />;
 }

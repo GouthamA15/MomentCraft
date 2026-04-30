@@ -20,6 +20,7 @@ export type ProjectTemplateData = {
     seo_title: string | null;
     seo_description: string | null;
     og_image: string | null;
+    album_enabled?: boolean;
   };
   translations: Partial<
     Record<TemplateFieldKey, Partial<Record<TemplateLanguageCode, string | null>>>
@@ -30,6 +31,7 @@ export type ProjectTemplateData = {
 
 export type TemplateRenderProps = {
   projectData?: ProjectTemplateData;
+  isPreview?: boolean;
 };
 
 export const templateRegistry = {

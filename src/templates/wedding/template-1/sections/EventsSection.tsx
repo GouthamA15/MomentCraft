@@ -43,7 +43,7 @@ const NavigationPath = ({ isActive }: { isActive: boolean }) => {
 
 const EventsSection = () => {
   const { labels, defaults, getField } = useLanguage();
-  const projectData = useProjectData();
+  const { projectData } = useProjectData();
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: false, amount: 0.2 });
 

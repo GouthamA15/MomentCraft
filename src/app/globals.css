@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Telugu:wght@400;500;600&family=Noto+Serif+Telugu:wght@400;500;600&family=Playfair+Display:wght@400;500;600;700&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -29,4 +28,8 @@ body {
 
 .text-glow {
   text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+}
+
+.font-dancing-script {
+  font-family: var(--font-dancing-script), cursive;
 }

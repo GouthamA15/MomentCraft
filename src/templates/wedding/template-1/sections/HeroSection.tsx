@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { FaHeart } from "react-icons/fa";
 import { useLanguage } from "../LanguageContext";
 import { useProjectData } from "../ProjectDataContext";
+import Link from "next/link";
 
 type FloatingHeart = {
   id: number;
@@ -18,12 +19,12 @@ type FloatingHeart = {
 
 const HeroSection = () => {
   const { labels, defaults, getField } = useLanguage();
-  const projectData = useProjectData();
+  const { projectData, isPreview } = useProjectData();
 
   const groomName = getField("groom_name") || defaults?.couple?.groom || "";
   const brideName = getField("bride_name") || defaults?.couple?.bride || "";
-  const weddingDateSource = projectData?.project.event_date
-    ? `${projectData.project.event_date}T00:00:00`
+  const weddingDateSource = projectData?.project?.event_date
+    ? `${projectData?.project?.event_date}T00:00:00`
     : defaults?.weddingDate;
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
@@ -71,6 +72,12 @@ const HeroSection = () => {
 
     return () => clearInterval(interval);
   }, [weddingDateSource]);
+
+  const albumHref = isPreview 
+    ? (projectData?.project?.id 
+        ? `/dashboard/projects/preview/${projectData?.project?.id}/album` 
+        : `/dashboard/templates/preview/wedding_classic/album`)
+    : `/site/${projectData?.project?.slug}/album`;
 
   return (
     <section
@@ -145,7 +152,7 @@ const HeroSection = () => {
         </p>
 
         <motion.h1
-          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-cursive mb-4 md:mb-6 drop-shadow-lg leading-tight py-2"
+          className="font-dancing-script text-5xl sm:text-6xl md:text-7xl lg:text-8xl mb-4 md:mb-6 drop-shadow-lg leading-tight py-2"
           style={{ color: "#f5e6b3" }}
           initial="hidden"
           animate="visible"
@@ -182,26 +189,58 @@ const HeroSection = () => {
           {getField("subtitle")}
         </p>
 
-        <div className="flex justify-center gap-1.5 sm:gap-3 md:gap-6">
+        <div className="flex justify-center gap-1.5 sm:gap-3 md:gap-4">
           {Object.entries(timeLeft).map(([unit, value]) => (
             <div
               key={unit}
-              className="flex flex-col items-center p-2 md:p-5 border-2 rounded-xl md:rounded-2xl shadow-2xl min-w-[45px] sm:min-w-[60px] md:min-w-[90px]"
+              className="flex flex-col items-center p-1.5 md:p-3 border-2 rounded-xl md:rounded-2xl shadow-2xl min-w-[42px] sm:min-w-[55px] md:min-w-[75px]"
               style={{
                 borderColor: "#d4af37",
                 backgroundColor: "rgba(139, 69, 19, 0.3)",
                 backdropFilter: "blur(10px)",
               }}
             >
-              <span className="text-xl sm:text-2xl md:text-5xl font-serif" style={{ color: "#f5e6b3" }}>
+              <span className="text-lg sm:text-xl md:text-4xl font-serif" style={{ color: "#f5e6b3" }}>
                 {String(value).padStart(2, "0")}
               </span>
-              <span className="text-[10px] sm:text-xs md:text-sm uppercase tracking-wider mt-0.5 md:mt-2 font-medium" style={{ color: "#d4af37" }}>
+              <span className="text-[9px] sm:text-[10px] md:text-xs uppercase tracking-wider mt-0.5 md:mt-1 font-medium" style={{ color: "#d4af37" }}>
                 {labels.countdown[unit as keyof typeof labels.countdown]}
               </span>
             </div>
           ))}
         </div>
+
+        {projectData?.project?.album_enabled !== false && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="mt-6 md:mt-8"
+          >
+            <Link
+              href={albumHref}
+              className="px-6 py-2 md:px-8 md:py-2.5 rounded-full border-2 transition-all duration-300 hover:scale-105 active:scale-95 shadow-xl flex items-center gap-2 group overflow-hidden relative"
+              style={{
+                borderColor: "#d4af37",
+                backgroundColor: "rgba(139, 69, 19, 0.4)",
+                color: "#f5e6b3",
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              <div className="absolute inset-0 bg-gold/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+              <span className="tracking-[0.2em] uppercase text-[10px] md:text-xs font-semibold relative z-10 font-serif">
+                {labels.invitation.viewAlbum}
+              </span>
+              <motion.span
+                animate={{ x: [0, 5, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="relative z-10 text-gold text-sm"
+              >
+                →
+              </motion.span>
+            </Link>
+          </motion.div>
+        )}
       </motion.div>
     </section>
   );

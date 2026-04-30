@@ -18,7 +18,8 @@
   },
   "invitation": {
     "greeting": "నమస్కారం",
-    "signOff": "ప్రేమతో, కుటుంబ సభ్యులు"
+    "signOff": "ప్రేమతో, కుటుంబ సభ్యులు",
+    "viewAlbum": "ఆల్బమ్ చూడండి"
   },
   "events": {
     "sectionTitle": "వేదిక",

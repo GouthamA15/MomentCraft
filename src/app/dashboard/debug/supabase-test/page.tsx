@@ -33,12 +33,11 @@ export default async function SupabaseDebugTestPage() {
     error: userError,
   } = await supabase.auth.getUser();
 
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession();
-
-  const jwtPayload = decodeJwtPayload(session?.access_token);
+  // We intentionally skip getSession() in Server Components to avoid "Cookies can only be modified" errors.
+  // getUser() is the safe, recommended way to check authentication during rendering.
+  const session = null;
+  const sessionError = null;
+  const jwtPayload = null;
 
   const selectResult = await supabase.from("vendors").select("*").limit(5);
 

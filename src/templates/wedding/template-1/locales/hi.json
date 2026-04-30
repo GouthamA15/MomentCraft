@@ -18,7 +18,8 @@
   },
   "invitation": {
     "greeting": "नमस्कार",
-    "signOff": "सप्रेम, परिवार"
+    "signOff": "सप्रेम, परिवार",
+    "viewAlbum": "एल्बम देखें"
   },
   "events": {
     "sectionTitle": "स्थान",
