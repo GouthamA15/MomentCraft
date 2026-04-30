@@ -36,10 +36,11 @@ async function fetchProjectData(projectId: string) {
   ]);
 
   const translations: ProjectTemplateData["translations"] = {};
-  for (const row of (translationsRes.data ?? [])) {
+  for (const row of (translationsRes.data ?? []) as Array<{ field_key: unknown; language_code: unknown; field_value: unknown }>) {
     if (!isTemplateFieldKey(row.field_key) || !isTemplateLanguageCode(row.language_code)) continue;
+    const value = typeof row.field_value === "string" ? row.field_value : null;
     const byLanguage = (translations[row.field_key] ??= {});
-    byLanguage[row.language_code] = row.field_value;
+    byLanguage[row.language_code] = value;
   }
 
   return {

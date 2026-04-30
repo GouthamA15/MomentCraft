@@ -35,7 +35,7 @@ export default async function SupabaseDebugTestPage() {
 
   // We intentionally skip getSession() in Server Components to avoid "Cookies can only be modified" errors.
   // getUser() is the safe, recommended way to check authentication during rendering.
-  const session = null;
+  const session = null as any;
   const sessionError = null;
   const jwtPayload = null;
 

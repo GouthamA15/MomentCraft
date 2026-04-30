@@ -216,7 +216,7 @@ const AlbumPage = () => {
                 onClick={toggleLanguage}
                 className={`px-3 py-1 rounded-full border-2 text-sm font-medium transition-colors ${btnStyle}`}
               >
-                {albumLang === "en" ? "తెలుగు" : "EN"}
+                {albumLang === "en" ? "తెలుగు" : "English"}
               </button>
               <button
                 onClick={() => setIsOpen(!isOpen)}
