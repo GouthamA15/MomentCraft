@@ -20,6 +20,7 @@ export type TemplateConfig = {
   translationFields: TemplateFieldKey[];
   media: TemplateMediaConfig;
   features: TemplateFeatureConfig;
+  gallerySections?: Array<{ key: string; label: string }>;
 };
 
 const DEFAULT_CONFIG: Omit<TemplateConfig, "templateCode" | "label"> = {
@@ -66,12 +67,17 @@ export const TEMPLATE_CONFIGS: Record<string, TemplateConfig> = {
       "custom_note",
     ],
     media: {
-      gallery: false,
+      gallery: true,
       music: true,
       video: false,
       coverImage: false,
       ogImage: true,
     },
+    gallerySections: [
+      { key: "haldi", label: "Haldi Ceremony" },
+      { key: "mehendi", label: "Mehendi & Sangeet" },
+      { key: "wedding", label: "The Wedding" },
+    ],
     features: {
       seo: true,
       qr: true,

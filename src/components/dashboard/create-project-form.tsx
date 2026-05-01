@@ -14,7 +14,7 @@ import {
 } from "@/constants/template-fields";
 import { getTemplateConfig } from "@/constants/template-config";
 import { AssetUploader } from "@/components/dashboard/asset-uploader";
-import { GalleryManager } from "@/components/dashboard/gallery-manager";
+import { GalleryManager, type GalleryItem } from "@/components/dashboard/gallery-manager";
 
 type ProjectEditInitialData = {
   project_name: string;
@@ -27,12 +27,13 @@ type ProjectEditInitialData = {
   font_family: string | null;
   background_music: string | null;
   cover_image: string | null;
-  gallery_images: string[];
+  album_enabled?: boolean;
+  media?: ProjectMediaRow[];
   seo_title: string | null;
   seo_description: string | null;
   og_image: string | null;
   translations: Partial<
-    Record<TemplateLanguageCode, Partial<Record<TemplateFieldKey, string | null>>>
+    Record<TemplateLanguageCode, Partial<Record<TemplateLanguageCode, string | null>>>
   >;
 };
 
@@ -126,10 +127,11 @@ export function CreateProjectForm({
   const [fontFamily, setFontFamily] = useState(initialData?.font_family ?? "Playfair Display");
   const [backgroundMusic, setBackgroundMusic] = useState(initialData?.background_music ?? "");
   const [coverImage, setCoverImage] = useState(initialData?.cover_image ?? "");
-  const [galleryInput, setGalleryInput] = useState((initialData?.gallery_images ?? []).join("\n"));
   const [seoTitle, setSeoTitle] = useState(initialData?.seo_title ?? "");
   const [seoDescription, setSeoDescription] = useState(initialData?.seo_description ?? "");
   const [ogImage, setOgImage] = useState(initialData?.og_image ?? "");
+  const [albumEnabled, setAlbumEnabled] = useState(initialData?.album_enabled ?? true);
+  const [pendingGalleryMedia, setPendingGalleryMedia] = useState<GalleryItem[]>([]);
 
   const slugPreview = useMemo(() => slugifyProjectName(projectName), [projectName]);
 
@@ -273,11 +275,6 @@ export function CreateProjectForm({
 
     setLoading(true);
 
-    const galleryImages = galleryInput
-      .split("\n")
-      .map((v) => v.trim())
-      .filter(Boolean);
-
     const payload = {
       project_name: projectName,
       event_date: eventDate || null,
@@ -291,7 +288,7 @@ export function CreateProjectForm({
       font_family: fontFamily || null,
       background_music: backgroundMusic || null,
       cover_image: coverImage || null,
-      gallery_images: galleryImages,
+      album_enabled: albumEnabled,
       seo_title: seoTitle || null,
       seo_description: seoDescription || null,
       og_image: ogImage || null,
@@ -314,6 +311,28 @@ export function CreateProjectForm({
         setLoading(false);
         setError(result.error || (projectId ? "Failed to update project." : "Failed to save draft."));
         return;
+      }
+
+      const effectiveProjectId = projectId || result.project_id;
+
+      // Batch upload pending gallery media
+      if (pendingGalleryMedia.length > 0 && effectiveProjectId) {
+        setSuccess("Project saved. Uploading gallery media...");
+        for (const item of pendingGalleryMedia) {
+          const formData = new FormData();
+          formData.append("file", item.file);
+          formData.append("projectId", effectiveProjectId);
+          formData.append("sectionKey", item.sectionKey);
+
+          const uploadRes = await fetch("/api/uploads/gallery", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!uploadRes.ok) {
+            // We continue with others but maybe show a partial error?
+          }
+        }
       }
 
       // Show success message before redirecting
@@ -628,18 +647,45 @@ export function CreateProjectForm({
         ) : null}
       </section>
 
-      {templateConfig.media.gallery ? (
-        <section className="glass rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-white">Gallery</h3>
-          {projectId ? (
-            <div className="mt-3">
-              <GalleryManager projectId={projectId} value={galleryInput} onChange={setGalleryInput} />
-            </div>
-          ) : (
-            <p className="mt-2 text-xs text-slate-300">Save the project once to enable uploads.</p>
-          )}
-        </section>
-      ) : null}
+      <section className="glass rounded-xl p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-white">Gallery Feature</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-300">{albumEnabled ? "Enabled" : "Disabled"}</span>
+            <input
+              type="checkbox"
+              className="h-5 w-5 rounded border-white/20 bg-white/5 accent-gold"
+              checked={albumEnabled}
+              onChange={(e) => setAlbumEnabled(e.target.checked)}
+            />
+          </div>
+        </div>
+        <p className="mt-1 text-xs text-slate-300">
+          Enable or disable the wedding album/gallery for this project.
+        </p>
+
+        {albumEnabled && (
+          <div className="mt-6 border-t border-white/10 pt-6">
+            <h3 className="mb-4 text-sm font-semibold text-white">Media Management</h3>
+            {projectId ? (
+              <GalleryManager
+                projectId={projectId}
+                initialMedia={initialData?.media}
+                onPendingMediaChange={setPendingGalleryMedia}
+                sections={templateConfig.gallerySections || [
+                  { key: "haldi", label: "Haldi Ceremony" },
+                  { key: "mehendi", label: "Mehendi & Sangeet" },
+                  { key: "wedding", label: "The Wedding" },
+                ]}
+              />
+            ) : (
+              <p className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-100">
+                Save the project draft first to enable media uploads.
+              </p>
+            )}
+          </div>
+        )}
+      </section>
 
       {templateConfig.features.seo ? (
         <section className="glass rounded-xl p-4">

@@ -1,0 +1,51 @@
+We need to extend the Edit Project form to support full media management, including fetching existing media from the database and allowing deletion directly from the UI.
+
+Currently, the form only handles new uploads and does not fetch or display previously uploaded media from the project_media table. This must be fixed so that the form reflects the actual state of the project.
+
+First, implement a fetch operation when the Edit page loads. Use the project ID and query the project_media table. Fetch all records where project_id matches and order them by sort_order.
+
+Once the data is fetched, transform it into a grouped structure based on section_key. Each section (haldi, mehendi, wedding) should have its own array of media items.
+
+Initialize the gallery state with this grouped data. Each item should include:
+
+id (from DB)
+url (media_url)
+storage_path
+isExisting: true
+
+Update the UI so that instead of showing “No media selected”, it renders the fetched images inside each section.
+
+Each media item should be displayed as a preview card with:
+
+image preview
+a delete button (top-right corner overlay)
+
+Next, implement delete functionality. When the delete button is clicked:
+
+Call a backend API route (create /api/uploads/delete)
+Pass:
+media id
+storage_path
+
+Inside the API:
+
+Delete the file from Supabase storage using storage_path
+Delete the row from project_media
+
+After successful deletion:
+
+Update frontend state to remove the item immediately (optimistic UI)
+
+Ensure that delete only affects existing items (isExisting: true) and not temporary uploads.
+
+Also ensure that:
+
+Existing images persist when new files are added
+State is merged, not replaced
+
+After implementation:
+
+Edit form loads with existing images
+Images are visible per section
+Admin can delete images
+UI reflects DB state accurately

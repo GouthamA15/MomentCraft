@@ -1,9 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { resolveTemplateComponent } from "@/lib/template-registry";
-import { LanguageProvider } from "@/templates/wedding/template-1/LanguageContext";
-import { ProjectDataProvider } from "@/templates/wedding/template-1/ProjectDataContext";
-import AlbumPage from "@/templates/wedding/template-1/AlbumPage";
+import { resolveTemplateAlbumComponent } from "@/lib/template-registry";
 
 type PageProps = {
   params: Promise<{ templateCode: string }>;
@@ -22,15 +19,8 @@ export default async function TemplateAlbumPreviewPage({ params }: PageProps) {
 
   if (!template) notFound();
 
-  // In a real scenario, we might want to fetch some default/mock project data for the preview
-  // For now, we'll pass null projectData which will trigger fallbacks in the template
-  const projectData = null;
+  const AlbumComponent = resolveTemplateAlbumComponent(template.template_code);
+  if (!AlbumComponent) notFound();
 
-  return (
-    <LanguageProvider projectData={projectData}>
-      <ProjectDataProvider projectData={projectData} isPreview={true}>
-        <AlbumPage />
-      </ProjectDataProvider>
-    </LanguageProvider>
-  );
+  return <AlbumComponent isPreview={true} />;
 }

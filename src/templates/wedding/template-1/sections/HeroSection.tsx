@@ -6,8 +6,16 @@ import { FaHeart } from "react-icons/fa";
 import { useLanguage } from "../LanguageContext";
 import { useProjectData } from "../ProjectDataContext";
 import Link from "next/link";
+import { Dancing_Script } from "next/font/google";
+
+const dancingScript = Dancing_Script({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
 
 type FloatingHeart = {
+// ... (rest of types and component start)
   id: number;
   left: string;
   top: string;
@@ -152,7 +160,7 @@ const HeroSection = () => {
         </p>
 
         <motion.h1
-          className="font-dancing-script text-5xl sm:text-6xl md:text-7xl lg:text-8xl mb-4 md:mb-6 drop-shadow-lg leading-tight py-2"
+          className={`${dancingScript.className} text-5xl sm:text-6xl md:text-7xl lg:text-8xl mb-4 md:mb-6 drop-shadow-lg leading-tight py-2`}
           style={{ color: "#f5e6b3" }}
           initial="hidden"
           animate="visible"
@@ -234,7 +242,7 @@ const HeroSection = () => {
               <motion.span
                 animate={{ x: [0, 5, 0] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
-                className="relative z-10 text-gold text-sm"
+                className="relative z-10 text-gold text-sm group-hover:text-white"
               >
                 →
               </motion.span>

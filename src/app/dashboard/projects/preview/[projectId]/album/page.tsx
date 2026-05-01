@@ -2,9 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isTemplateFieldKey, isTemplateLanguageCode } from "@/constants/template-fields";
 import type { ProjectTemplateData } from "@/lib/template-registry";
-import { LanguageProvider } from "@/templates/wedding/template-1/LanguageContext";
-import { ProjectDataProvider } from "@/templates/wedding/template-1/ProjectDataContext";
-import AlbumPage from "@/templates/wedding/template-1/AlbumPage";
+import { resolveTemplateAlbumComponent } from "@/lib/template-registry";
 
 type PageProps = {
   params: Promise<{ projectId: string }>;
@@ -21,10 +19,11 @@ async function fetchProjectData(projectId: string) {
 
   if (!project) return null;
 
-  const [translationsRes, galleryRes, assetsRes] = await Promise.all([
+  const [{ data: template }, translationsRes, mediaRes, assetsRes] = await Promise.all([
+    supabase.from("templates").select("template_code").eq("id", project.template_id).maybeSingle(),
     supabase.from("project_translations").select("*").eq("project_id", project.id),
     supabase
-      .from("project_gallery")
+      .from("project_media")
       .select("*")
       .eq("project_id", project.id)
       .order("sort_order", { ascending: true }),
@@ -44,24 +43,24 @@ async function fetchProjectData(projectId: string) {
   }
 
   return {
-    project,
-    translations,
-    gallery: galleryRes.data ?? [],
-    assets: assetsRes.data ?? [],
-  } as ProjectTemplateData;
+    projectData: {
+      project,
+      translations,
+      media: mediaRes.data ?? [],
+      assets: assetsRes.data ?? [],
+    } as ProjectTemplateData,
+    templateCode: template?.template_code,
+  };
 }
 
 export default async function ProjectAlbumPreviewPage({ params }: PageProps) {
   const { projectId } = await params;
-  const projectData = await fetchProjectData(projectId);
+  const result = await fetchProjectData(projectId);
 
-  if (!projectData) notFound();
+  if (!result || !result.projectData) notFound();
 
-  return (
-    <LanguageProvider projectData={projectData}>
-      <ProjectDataProvider projectData={projectData} isPreview={true}>
-        <AlbumPage />
-      </ProjectDataProvider>
-    </LanguageProvider>
-  );
+  const AlbumComponent = resolveTemplateAlbumComponent(result.templateCode);
+  if (!AlbumComponent) notFound();
+
+  return <AlbumComponent projectData={result.projectData} isPreview={true} />;
 }

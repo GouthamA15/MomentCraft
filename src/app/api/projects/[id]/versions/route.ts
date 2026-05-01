@@ -113,14 +113,14 @@ export async function POST(request: Request, context: RouteContext) {
     const lastVersion = existingVersions?.[0]?.version_number ?? 0;
     const nextVersion = Number.isFinite(lastVersion) ? lastVersion + 1 : 1;
 
-    const [translationsRes, galleryRes, assetsRes] = await Promise.all([
+    const [translationsRes, mediaRes, assetsRes] = await Promise.all([
       supabase
         .from("project_translations")
         .select("field_key,language_code,field_value")
         .eq("project_id", projectId),
       supabase
-        .from("project_gallery")
-        .select("image_url,sort_order")
+        .from("project_media")
+        .select("media_url,section_key,media_type,sort_order,storage_path")
         .eq("project_id", projectId)
         .order("sort_order", { ascending: true }),
       supabase
@@ -132,8 +132,8 @@ export async function POST(request: Request, context: RouteContext) {
     if (translationsRes.error) {
       return NextResponse.json({ error: translationsRes.error.message }, { status: 500 });
     }
-    if (galleryRes.error) {
-      return NextResponse.json({ error: galleryRes.error.message }, { status: 500 });
+    if (mediaRes.error) {
+      return NextResponse.json({ error: mediaRes.error.message }, { status: 500 });
     }
     if (assetsRes.error) {
       return NextResponse.json({ error: assetsRes.error.message }, { status: 500 });
@@ -142,7 +142,7 @@ export async function POST(request: Request, context: RouteContext) {
     const snapshot = {
       project,
       translations: translationsRes.data ?? [],
-      gallery: galleryRes.data ?? [],
+      media: mediaRes.data ?? [],
       assets: assetsRes.data ?? [],
       captured_at: new Date().toISOString(),
     };

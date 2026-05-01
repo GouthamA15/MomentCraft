@@ -80,6 +80,7 @@ export async function PATCH(request: Request, context: RouteContext) {
         seo_title: body.seo_title || null,
         seo_description: body.seo_description || null,
         og_image: body.og_image || null,
+        album_enabled: body.album_enabled ?? true,
       })
       .eq("id", id);
 
@@ -139,29 +140,6 @@ export async function PATCH(request: Request, context: RouteContext) {
       }
     }
 
-    const galleryItems: string[] = Array.isArray(body.gallery_images)
-      ? body.gallery_images.map((v: unknown) => (typeof v === "string" ? v : "")).filter(Boolean)
-      : [];
-
-    const { error: galleryDeleteError } = await supabase.from("project_gallery").delete().eq("project_id", id);
-    if (galleryDeleteError) {
-      return NextResponse.json({ error: galleryDeleteError.message }, { status: 500 });
-    }
-
-    if (galleryItems.length > 0) {
-      const { error: galleryInsertError } = await supabase.from("project_gallery").insert(
-        galleryItems.map((url, idx) => ({
-          project_id: id,
-          image_url: url,
-          sort_order: idx,
-        })),
-      );
-
-      if (galleryInsertError) {
-        return NextResponse.json({ error: galleryInsertError.message }, { status: 500 });
-      }
-    }
-
     const managedAssetTypes = ["cover_image", "background_music", "og_image"];
     const { error: managedAssetsDeleteError } = await supabase
       .from("project_assets")
@@ -218,13 +196,13 @@ export async function DELETE(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Project not found." }, { status: 404 });
     }
 
-    const [{ error: galleryError }, { error: assetsError }, { error: translationsError }] = await Promise.all([
-      supabase.from("project_gallery").delete().eq("project_id", id),
+    const [{ error: mediaError }, { error: assetsError }, { error: translationsError }] = await Promise.all([
+      supabase.from("project_media").delete().eq("project_id", id),
       supabase.from("project_assets").delete().eq("project_id", id),
       supabase.from("project_translations").delete().eq("project_id", id),
     ]);
 
-    if (galleryError) return NextResponse.json({ error: galleryError.message }, { status: 500 });
+    if (mediaError) return NextResponse.json({ error: mediaError.message }, { status: 500 });
     if (assetsError) return NextResponse.json({ error: assetsError.message }, { status: 500 });
     if (translationsError) return NextResponse.json({ error: translationsError.message }, { status: 500 });
 

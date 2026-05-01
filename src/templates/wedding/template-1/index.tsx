@@ -1,35 +1,19 @@
 "use client";
 
 import "./styles/template-1.css";
-import { LanguageProvider } from "./LanguageContext";
-import { ProjectDataProvider } from "./ProjectDataContext";
-import Navbar from "./sections/Navbar";
-import HeroSection from "./sections/HeroSection";
-import InvitationSection from "./sections/InvitationSection";
-import OurStorySection from "./sections/OurStorySection";
-import EventsSection from "./sections/EventsSection";
-import Footer from "./sections/Footer";
 import TraditionalBackground from "./sections/TraditionalBackground";
+import Navbar from "./sections/Navbar";
 import MusicPlayer from "./MusicPlayer";
-import type { TemplateRenderProps } from "@/lib/template-registry";
+import Footer from "./sections/Footer";
 
-export default function TemplateOne({ projectData, isPreview }: TemplateRenderProps) {
+export default function TemplateOneLayout({ children }: { children: React.ReactNode }) {
   return (
-    <LanguageProvider projectData={projectData ?? null}>
-      <ProjectDataProvider projectData={projectData ?? null} isPreview={isPreview}>
-        <div className="template-one-root min-h-screen font-sans text-gray-800 relative">
-          <TraditionalBackground />
-          <Navbar />
-          <MusicPlayer />
-          <main>
-            <HeroSection />
-            <InvitationSection />
-            <OurStorySection />
-            <EventsSection />
-          </main>
-          <Footer />
-        </div>
-      </ProjectDataProvider>
-    </LanguageProvider>
+    <div className="template-one-root min-h-screen font-sans text-gray-800 relative">
+      <TraditionalBackground />
+      <Navbar />
+      <MusicPlayer />
+      {children}
+      <Footer />
+    </div>
   );
 }

@@ -30,17 +30,35 @@ export default async function EditProjectPage({ params }: PageProps) {
   const { data: project, error: projectError } = await supabase
     .from("projects")
     .select(
-      "id,project_name,event_date,vendor_id,client_id,template_id,theme_color,font_family,background_music,seo_title,seo_description,og_image",
+      "id,project_name,event_date,vendor_id,client_id,template_id,theme_color,font_family,background_music,seo_title,seo_description,og_image,album_enabled",
     )
     .eq("id", projectId)
-    .single();
+    .maybeSingle();
 
-  if (projectError || !project) {
+  if (projectError) {
+    // eslint-disable-next-line no-console
+    console.error("Error fetching project:", projectError);
+  }
+
+  if (!project) {
+    // eslint-disable-next-line no-console
+    console.warn("No project found for ID:", projectId);
     return (
       <div className="space-y-4">
         <div className="glass rounded-xl p-4">
-          <h2 className="text-lg font-semibold text-white">Project not found</h2>
-          <p className="text-sm text-slate-300">Unable to edit this project.</p>
+          <h2 className="text-lg font-semibold text-white">
+            {projectError ? "Error loading project" : "Project not found"}
+          </h2>
+          <p className="text-sm text-slate-300">
+            {projectError 
+              ? "A database error occurred while trying to fetch this project." 
+              : "The requested project could not be found."}
+          </p>
+          {projectError && (
+            <pre className="mt-3 overflow-auto rounded bg-black/30 p-2 text-[10px] text-red-300">
+              {JSON.stringify(projectError, null, 2)}
+            </pre>
+          )}
         </div>
         <Link
           href="/dashboard/projects"
@@ -52,14 +70,14 @@ export default async function EditProjectPage({ params }: PageProps) {
     );
   }
 
-  const [{ data: translationsRows }, { data: gallery }, { data: assets }] = await Promise.all([
+  const [{ data: translationsRows }, { data: media }, { data: assets }] = await Promise.all([
     supabase
       .from("project_translations")
       .select("field_key,language_code,field_value")
       .eq("project_id", projectId),
     supabase
-      .from("project_gallery")
-      .select("image_url,sort_order")
+      .from("project_media")
+      .select("*")
       .eq("project_id", projectId)
       .order("sort_order", { ascending: true }),
     supabase
@@ -128,7 +146,8 @@ export default async function EditProjectPage({ params }: PageProps) {
           font_family: project.font_family,
           background_music: project.background_music || backgroundMusicAsset,
           cover_image: coverImage,
-          gallery_images: (gallery ?? []).map((g) => g.image_url),
+          album_enabled: project.album_enabled ?? true,
+          media: (media ?? []) as any[],
           seo_title: project.seo_title,
           seo_description: project.seo_description,
           og_image: project.og_image || ogImageAsset,

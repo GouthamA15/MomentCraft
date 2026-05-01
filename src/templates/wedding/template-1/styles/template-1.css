@@ -4,12 +4,17 @@
   color: #1f2937;
 }
 
-.template-one-root h1,
-.template-one-root h2,
 .template-one-root h3,
 .template-one-root h4,
 .template-one-root h5,
 .template-one-root h6 {
+  font-family: "Playfair Display", "Noto Serif Telugu", Georgia, serif;
+  color: #800000;
+}
+
+/* Reduced specificity for h1 and h2 to allow overrides from next/font classes */
+:where(.template-one-root) h1,
+:where(.template-one-root) h2 {
   font-family: "Playfair Display", "Noto Serif Telugu", Georgia, serif;
   color: #800000;
 }

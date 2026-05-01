@@ -15,12 +15,13 @@ export default async function ProjectPreviewPage({ params }: PageProps) {
   const { data: project, error: projectError } = await supabase
     .from("projects")
     .select(
-      "id,project_name,slug,status,event_date,template_id,theme_color,font_family,background_music,seo_title,seo_description,og_image",
+      "id,project_name,slug,status,event_date,template_id,theme_color,font_family,background_music,seo_title,seo_description,og_image,album_enabled",
     )
     .eq("id", projectId)
     .single();
 
   if (projectError || !project) {
+// ... (rest of error block remains same)
     return (
       <div className="p-4">
         <div className="glass mx-auto max-w-xl rounded-xl p-4">
@@ -40,7 +41,7 @@ export default async function ProjectPreviewPage({ params }: PageProps) {
     );
   }
 
-  const [{ data: template }, { data: translationsRows }, { data: gallery }, { data: assets }] = await Promise.all([
+  const [{ data: template }, { data: translationsRows }, { data: media }, { data: assets }] = await Promise.all([
     supabase
       .from("templates")
       .select("template_code,is_active")
@@ -51,8 +52,8 @@ export default async function ProjectPreviewPage({ params }: PageProps) {
       .select("field_key,language_code,field_value")
       .eq("project_id", projectId),
     supabase
-      .from("project_gallery")
-      .select("image_url,sort_order")
+      .from("project_media")
+      .select("*")
       .eq("project_id", projectId)
       .order("sort_order", { ascending: true }),
     supabase
@@ -66,6 +67,7 @@ export default async function ProjectPreviewPage({ params }: PageProps) {
   const TemplateComponent = resolveTemplateComponent(templateCode);
 
   if (!TemplateComponent) {
+// ... (rest of template error block remains same)
     return (
       <div className="p-4">
         <div className="glass mx-auto max-w-xl rounded-xl p-4">
@@ -109,9 +111,10 @@ export default async function ProjectPreviewPage({ params }: PageProps) {
       seo_title: project.seo_title,
       seo_description: project.seo_description,
       og_image: project.og_image,
+      album_enabled: project.album_enabled ?? true,
     },
     translations,
-    gallery: (gallery ?? []) as Array<{ image_url: string; sort_order: number }>,
+    media: (media ?? []) as ProjectTemplateData["media"],
     assets: (assets ?? []) as Array<{ asset_type: string | null; file_url: string; file_name: string | null }>,
   };
 

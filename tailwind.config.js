@@ -30,7 +30,6 @@ module.exports = {
       fontFamily: {
         serif: ['"Playfair Display"', '"Noto Serif Telugu"', "Georgia", "serif"],
         sans: ["Inter", '"Noto Sans Telugu"', "system-ui", "sans-serif"],
-        cursive: ['"Great Vibes"', "cursive"],
       },
       backgroundImage: {
         "gold-gradient":

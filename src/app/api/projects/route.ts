@@ -88,6 +88,7 @@ export async function POST(request: Request) {
       seo_title: body.seo_title || null,
       seo_description: body.seo_description || null,
       og_image: body.og_image || null,
+      album_enabled: body.album_enabled ?? true,
     };
 
     const { data: createdProject, error: projectError } = await supabase
@@ -132,24 +133,6 @@ export async function POST(request: Request) {
       if (translationsError) {
         await supabase.from("projects").delete().eq("id", projectId);
         return NextResponse.json({ error: translationsError.message }, { status: 500 });
-      }
-    }
-
-    const galleryItems: string[] = Array.isArray(body.gallery_images)
-      ? body.gallery_images.filter(Boolean)
-      : [];
-
-    if (galleryItems.length > 0) {
-      const { error: galleryError } = await supabase.from("project_gallery").insert(
-        galleryItems.map((url, idx) => ({
-          project_id: projectId,
-          image_url: url,
-          sort_order: idx,
-        })),
-      );
-      if (galleryError) {
-        await supabase.from("projects").delete().eq("id", projectId);
-        return NextResponse.json({ error: galleryError.message }, { status: 500 });
       }
     }
 
