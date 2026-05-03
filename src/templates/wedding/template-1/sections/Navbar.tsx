@@ -105,12 +105,12 @@ const Navbar = () => {
             {navLinks.map((link) => (
               link.type === "scroll" ? (
                 <ScrollLink
-                  key={link.to}
-                  to={link.to}
+                  key={link.to ?? link.name}
+                  to={link.to ?? ""}
                   smooth={true}
                   duration={500}
                   spy={true}
-                  activeClass={activeSection === link.to ? "opacity-100 scale-105 font-bold" : ""}
+                  activeClass={activeSection === (link.to ?? "") ? "opacity-100 scale-105 font-bold" : ""}
                   offset={0}
                   className={`cursor-pointer font-medium hover:scale-105 transition-all duration-300 ${textStyle}`}
                 >
@@ -118,8 +118,8 @@ const Navbar = () => {
                 </ScrollLink>
               ) : (
                 <Link
-                  key={link.href}
-                  href={link.href!}
+                  key={"href" in link ? link.href : link.name}
+                  href={"href" in link ? (link.href ?? "#") : "#"}
                   className={`cursor-pointer font-medium hover:scale-105 transition-all duration-300 ${textStyle}`}
                 >
                   {link.name}
@@ -173,7 +173,7 @@ const Navbar = () => {
             <div className="px-4 pt-4 pb-8 space-y-2 flex flex-col items-center">
               {navLinks.map((link, index) => (
                 <motion.div
-                  key={link.type === "scroll" ? link.to : link.href}
+                  key={`${index}-${link.name}`}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -182,7 +182,7 @@ const Navbar = () => {
                 >
                   {link.type === "scroll" ? (
                     <ScrollLink
-                      to={link.to!}
+                      to={link.to ?? ""}
                       smooth={true}
                       duration={500}
                       offset={0}
@@ -193,7 +193,7 @@ const Navbar = () => {
                     </ScrollLink>
                   ) : (
                     <Link
-                      href={link.href!}
+                      href={"href" in link ? (link.href ?? "#") : "#"}
                       className="cursor-pointer block px-3 py-4 text-lg font-serif font-medium text-amber-100 hover:text-gold transition-colors border-b border-gold/10 w-full text-center tracking-wider uppercase drop-shadow-md"
                       onClick={() => setIsOpen(false)}
                     >

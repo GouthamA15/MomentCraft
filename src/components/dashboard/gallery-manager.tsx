@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useState, useRef } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { FaPlay, FaTrash } from "react-icons/fa";
 import type { ProjectMediaRow } from "@/lib/template-registry";
+import { createClient } from "@/lib/supabase/client";
 
 export type GalleryItem = {
   id: string;
@@ -23,19 +24,72 @@ type Props = {
 };
 
 export function GalleryManager({ projectId, initialMedia = [], sections, onPendingMediaChange }: Props) {
-  // Combine into a single state for easier management, or keep separate if preferred.
-  // The prompt says "Initialize your gallery state with this grouped data".
-  // Let's use a flat array but with isExisting flag.
-  const [items, setItems] = useState<GalleryItem[]>(() => 
-    initialMedia.map(m => ({
-      id: m.id,
-      url: m.media_url,
-      storagePath: m.storage_path,
-      sectionKey: m.section_key,
-      mediaType: (m.media_type as "image" | "video") || "image",
-      isExisting: true
-    }))
-  );
+  // Initialize state with grouped structure as empty arrays
+  const [galleryState, setGalleryState] = useState<Record<string, GalleryItem[]>>(() => {
+    const initial: Record<string, GalleryItem[]> = {};
+    sections.forEach((s) => {
+      initial[s.key] = [];
+    });
+    return initial;
+  });
+
+  // Sync pending items to parent whenever galleryState changes
+  useEffect(() => {
+    const allPending = Object.values(galleryState)
+      .flat()
+      .filter((i) => !i.isExisting);
+    onPendingMediaChange?.(allPending);
+  }, [galleryState, onPendingMediaChange]);
+
+  // Fetch media from Supabase and populate state
+  useEffect(() => {
+    // Guard condition: do not run fetch if projectId is missing
+    if (!projectId) return;
+
+    async function loadMedia() {
+      const supabase = createClient();
+      
+      // Select from project_media, filter by project_id, order by sort_order
+      const { data, error } = await supabase
+        .from("project_media")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("sort_order", { ascending: true });
+
+      if (error) {
+        // eslint-disable-next-line no-console
+        console.error("Error fetching project media:", error);
+        return;
+      }
+
+      // Group flat data into structure based on section_key
+      if (data) {
+        const next: Record<string, GalleryItem[]> = {};
+        // Initialize next with all possible section keys from sections prop
+        sections.forEach((s) => {
+          next[s.key] = [];
+        });
+
+        data.forEach((m) => {
+          if (!next[m.section_key]) return;
+          next[m.section_key].push({
+            id: m.id,
+            url: m.media_url,
+            storagePath: m.storage_path,
+            sectionKey: m.section_key,
+            mediaType: (m.media_type as "image" | "video") || "image",
+            isExisting: true,
+          });
+        });
+        
+        // Update gallery state with grouped DB data
+        setGalleryState(next);
+      }
+    }
+
+    loadMedia();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const activeSectionRef = useRef<string | null>(null);
@@ -52,35 +106,39 @@ export function GalleryManager({ projectId, initialMedia = [], sections, onPendi
 
     const filesArray = Array.from(files);
     const now = Date.now();
-    
-    const newItems = filesArray.map((file, idx) => ({
-      id: `pending-${now}-${idx}`,
-      file,
-      url: URL.createObjectURL(file),
-      sectionKey,
-      mediaType: file.type.startsWith("video/") ? "video" : "image" as const,
-      isExisting: false
-    }));
 
-    const updatedItems = [...items, ...newItems];
-    setItems(updatedItems);
-    
-    // Only notify parent of NEW items
-    onPendingMediaChange?.(updatedItems.filter(i => !i.isExisting));
+    const newItems: GalleryItem[] = filesArray.map((file, idx) => {
+      const mediaType: GalleryItem["mediaType"] = file.type.startsWith("video/") ? "video" : "image";
+
+      return {
+        id: `pending-${now}-${idx}`,
+        file,
+        url: URL.createObjectURL(file),
+        sectionKey,
+        mediaType,
+        isExisting: false,
+      };
+    });
+
+    // Append new files to existing state
+    setGalleryState((prev) => ({
+      ...prev,
+      [sectionKey]: [...(prev[sectionKey] || []), ...newItems],
+    }));
 
     activeSectionRef.current = null;
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const removeItem = async (id: string) => {
-    const itemToRemove = items.find(i => i.id === id);
+  const removeItem = async (sectionKey: string, id: string) => {
+    const sectionItems = galleryState[sectionKey] || [];
+    const itemToRemove = sectionItems.find((i) => i.id === id);
     if (!itemToRemove) return;
 
     // Optimistic update
-    setItems(prev => {
-      const filtered = prev.filter(i => i.id !== id);
-      onPendingMediaChange?.(filtered.filter(i => !i.isExisting));
-      return filtered;
+    setGalleryState((prev) => {
+      const nextSectionItems = prev[sectionKey].filter((i) => i.id !== id);
+      return { ...prev, [sectionKey]: nextSectionItems };
     });
 
     if (itemToRemove.isExisting && itemToRemove.storagePath) {
@@ -90,8 +148,8 @@ export function GalleryManager({ projectId, initialMedia = [], sections, onPendi
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             mediaId: itemToRemove.id,
-            storagePath: itemToRemove.storagePath
-          })
+            storagePath: itemToRemove.storagePath,
+          }),
         });
 
         if (!res.ok) {
@@ -102,24 +160,22 @@ export function GalleryManager({ projectId, initialMedia = [], sections, onPendi
         // Rollback on error
         // eslint-disable-next-line no-console
         console.error("Failed to delete media:", err);
-        setItems(prev => [...prev, itemToRemove]);
+        setGalleryState((prev) => ({
+          ...prev,
+          [sectionKey]: [...prev[sectionKey], itemToRemove],
+        }));
       }
     } else if (!itemToRemove.isExisting) {
       URL.revokeObjectURL(itemToRemove.url);
     }
   };
 
-  const groupedItems = sections.reduce((acc, section) => {
-    acc[section.key] = items.filter(i => i.sectionKey === section.key);
-    return acc;
-  }, {} as Record<string, GalleryItem[]>);
-
   return (
     <div className="space-y-8">
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        className="hidden" 
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
         accept="image/*,video/*"
         multiple
         onChange={handleFileChange}
@@ -132,51 +188,56 @@ export function GalleryManager({ projectId, initialMedia = [], sections, onPendi
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              className="px-3 py-1.5 text-xs"
               onClick={() => onUploadClick(section.key)}
             >
               Select Media
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {groupedItems[section.key]?.map((item) => (
-              <div 
-                key={item.id} 
-                className={`relative aspect-square rounded-lg overflow-hidden group border ${
-                  item.isExisting ? "border-white/10 bg-white/5" : "border-2 border-dashed border-gold/40 bg-gold/5"
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {/* Condition for showing images depends on state array length for each section */}
+            {galleryState[section.key]?.map((item) => (
+              <div
+                key={item.id}
+                className={`group relative overflow-hidden rounded-lg border aspect-square ${
+                  item.isExisting
+                    ? "border-white/10 bg-white/5"
+                    : "border-2 border-dashed border-gold/40 bg-gold/5"
                 }`}
               >
                 {!item.isExisting && (
-                  <div className="absolute top-1 left-1 z-10 rounded bg-gold px-1.5 py-0.5 text-[8px] font-bold uppercase text-black">
+                  <div className="absolute left-1 top-1 z-10 rounded bg-gold px-1.5 py-0.5 text-[8px] font-bold uppercase text-black">
                     New
                   </div>
                 )}
                 {item.mediaType === "video" ? (
-                  <div className="w-full h-full flex items-center justify-center bg-slate-800">
-                    <FaPlay className="text-gold text-xl" />
+                  <div className="flex h-full w-full items-center justify-center bg-slate-800">
+                    <FaPlay className="text-xl text-gold" />
                   </div>
                 ) : (
+                  // Render each item using its URL
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img 
-                    src={item.url} 
-                    alt="Gallery item" 
-                    className={`w-full h-full object-cover ${!item.isExisting ? "opacity-70" : ""}`}
+                  <img
+                    src={item.url}
+                    alt="Gallery item"
+                    className={`h-full w-full object-cover ${!item.isExisting ? "opacity-70" : ""}`}
                   />
                 )}
                 <button
                   type="button"
-                  onClick={() => removeItem(item.id)}
-                  className="absolute top-1 right-1 p-1.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                  onClick={() => removeItem(section.key, item.id)}
+                  className="absolute right-1 top-1 z-20 rounded-full bg-red-600 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100"
                 >
                   <FaTrash size={10} />
                 </button>
               </div>
             ))}
-            
-            {!groupedItems[section.key]?.length && (
-              <div className="col-span-full py-8 text-center border-2 border-dashed border-white/10 rounded-lg">
-                <p className="text-xs text-slate-400 italic">No media selected for this section</p>
+
+            {/* "No media selected" appears only if state array is empty */}
+            {(!galleryState[section.key] || galleryState[section.key].length === 0) && (
+              <div className="col-span-full rounded-lg border-2 border-dashed border-white/10 py-8 text-center">
+                <p className="text-xs italic text-slate-400">No media selected for this section</p>
               </div>
             )}
           </div>
@@ -185,3 +246,5 @@ export function GalleryManager({ projectId, initialMedia = [], sections, onPendi
     </div>
   );
 }
+
+

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { FaPlay } from "react-icons/fa";
 import { Dancing_Script } from "next/font/google";
+import type { ProjectTemplateData } from "@/lib/template-registry";
 import { useLanguage } from "./LanguageContext";
 import { useProjectData } from "./ProjectDataContext";
 

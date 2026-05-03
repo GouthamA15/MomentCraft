@@ -15,6 +15,7 @@ import {
 import { getTemplateConfig } from "@/constants/template-config";
 import { AssetUploader } from "@/components/dashboard/asset-uploader";
 import { GalleryManager, type GalleryItem } from "@/components/dashboard/gallery-manager";
+import type { ProjectMediaRow } from "@/lib/template-registry";
 
 type ProjectEditInitialData = {
   project_name: string;
@@ -33,7 +34,7 @@ type ProjectEditInitialData = {
   seo_description: string | null;
   og_image: string | null;
   translations: Partial<
-    Record<TemplateLanguageCode, Partial<Record<TemplateLanguageCode, string | null>>>
+    Record<TemplateLanguageCode, Partial<Record<TemplateFieldKey, string | null>>>
   >;
 };
 
@@ -319,6 +320,8 @@ export function CreateProjectForm({
       if (pendingGalleryMedia.length > 0 && effectiveProjectId) {
         setSuccess("Project saved. Uploading gallery media...");
         for (const item of pendingGalleryMedia) {
+          if (!item.file) continue;
+
           const formData = new FormData();
           formData.append("file", item.file);
           formData.append("projectId", effectiveProjectId);
