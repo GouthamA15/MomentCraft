@@ -250,5 +250,26 @@ create table project_assets (
 | `family_message_te` | `text` |  Nullable |
 | `family_message_hi` | `text` |  Nullable |
 | `custom_note_en` | `text` |  Nullable |
-| `custom_note_te` | `text` |  Nullable |
-| `custom_note_hi` | `text` |  Nullable |
+-- =====================================================
+-- 11. PROJECT MEDIA (Added for dynamic templates)
+-- =====================================================
+
+-- Table creation (for reference if not exists)
+-- create table project_media (
+--     id uuid primary key default gen_random_uuid(),
+--     project_id uuid references projects(id) on delete cascade,
+--     section_key text not null,
+--     media_url text not null,
+--     storage_path text not null,
+--     media_type text default 'image',
+--     sort_order integer default 0,
+--     created_at timestamptz default now()
+-- );
+
+-- RLS Policy for project_media
+-- ensure SELECT is allowed for authenticated users in dashboard
+-- create policy "auth read media"
+-- on project_media
+-- for select
+-- to authenticated
+-- using (true);

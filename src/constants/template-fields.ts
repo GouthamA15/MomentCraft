@@ -21,11 +21,8 @@ export type TemplateFieldKey = (typeof TEMPLATE_FIELD_KEYS)[number];
 export const TEMPLATE_LANGUAGE_CODES = ["en", "te", "hi"] as const;
 export type TemplateLanguageCode = (typeof TEMPLATE_LANGUAGE_CODES)[number];
 
-export function isTemplateFieldKey(value: unknown): value is TemplateFieldKey {
-  return (
-    typeof value === "string" &&
-    (TEMPLATE_FIELD_KEYS as readonly string[]).includes(value)
-  );
+export function isTemplateFieldKey(value: unknown): value is string {
+  return typeof value === "string";
 }
 
 export function isTemplateLanguageCode(value: unknown): value is TemplateLanguageCode {

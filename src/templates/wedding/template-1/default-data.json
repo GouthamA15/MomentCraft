@@ -1,0 +1,197 @@
+{
+  "en": {
+    "couple": {
+      "groom": "Rajkumar",
+      "bride": "Alekya"
+    },
+    "weddingDate": "2026-04-26T11:59:00+05:30",
+    "contact": {
+      "whatsappNumber": "+917674907207",
+      "email": "goutham7819@gmail.com"
+    },
+    "hero": {
+      "title": "We are getting married!",
+      "subtitle": "Join us to celebrate our new beginning."
+    },
+    "invitation": {
+      "greeting": "Namaskaram",
+      "message": "With the blessings of our elders, we joyfully invite you to our wedding. Please join us in celebrating this special occasion with your love, blessings, and presence.",
+      "signOff": "With Love, The Families"
+    },
+    "countdown": {
+      "days": "days",
+      "hours": "hours",
+      "minutes": "minutes",
+      "seconds": "seconds"
+    },
+    "eventsTitle": "Venue",
+    "viewOnMap": "View on Map",
+    "events": [
+      {
+        "id": "wedding",
+        "title": "Muhurtham (Wedding)",
+        "date": "Apr 26, 2026",
+        "time": "11:59 AM",
+        "venue": "Siri Function Hall - Godavarikhani City",
+        "address": "Addagunta Pally, Godavarikhani, Ramagundam, Telangana 505209",
+        "mapLink": "https://maps.app.goo.gl/pXndJ9iDpozvn353A"
+      }
+    ],
+    "galleryTitle": "Gallery",
+    "photoText": "Photo",
+    "galleryPaths": [
+      "/assets/gallery/photo1.jpg",
+      "/assets/gallery/photo2.jpg",
+      "/assets/gallery/photo3.jpg",
+      "/assets/gallery/photo4.jpg",
+      "/assets/gallery/photo5.jpg",
+      "/assets/gallery/photo6.jpg"
+    ],
+    "rsvpTitle": "RSVP",
+    "rsvpSubtitle": "We look forward to celebrating with you",
+    "rsvpForm": {
+      "nameLabel": "Full Name *",
+      "namePlaceholder": "Enter your name",
+      "guestsLabel": "Number of Guests",
+      "guestsMore": "More than 5",
+      "attendLabel": "Will you attend? *",
+      "attendYes": "Joyfully Accepts",
+      "attendNo": "Regretfully Declines",
+      "messageLabel": "Wishes for the couple (Optional)",
+      "messagePlaceholder": "Leave a message...",
+      "submitBtn": "Send RSVP",
+      "submittingText": "Submitting...",
+      "errorText": "Something went wrong. Please try again.",
+      "successTitle": "Thank You!",
+      "successDesc": "Your response has been recorded successfully.",
+      "submitAnotherBtn": "Submit another response"
+    },
+    "footer": {
+      "madeWith": "Made with",
+      "forSpecialDay": "for our special day",
+      "allRights": "All Rights Reserved.",
+      "contact": "Contact"
+    },
+    "gallery": {
+      "title": "Gallery"
+    },
+    "ourStory": {
+      "paragraphs": [
+        "We weren’t searching for each other—just living our own lives, finding comfort in our routines, families, and friendships.",
+        "Then our families introduced us.",
+        "What began as a simple meeting slowly turned into something meaningful. We started talking, spending time together, traveling, and getting to know each other beyond first impressions.",
+        "She saw in him a kind, genuine, and caring person—someone who made her feel seen, understood, and valued.",
+        "He found in her a warm, strong, and beautiful soul—someone who brought joy, comfort, and meaning into his life.",
+        "Somewhere along the way, without even realizing it, conversations turned into laughter, moments turned into memories, and two lives began to intertwine.",
+        "What started as “just a match” became a choice—made with love, trust, and hope for the future.",
+        "Today, we choose each other—to grow together, to support one another, and to build a life filled with happiness, love, and countless beautiful moments."
+      ],
+      "closing": "Forever"
+    },
+    "nav": {
+      "home": "Home",
+      "invitation": "Invitation",
+      "events": "Venue",
+      "gallery": "Gallery",
+      "ourStory": "Our Story",
+      "rsvp": "RSVP"
+    }
+  },
+  "te": {
+    "couple": {
+      "groom": "రాజకుమార్",
+      "bride": "అలేఖ్య"
+    },
+    "weddingDate": "2026-04-26T11:59:00+05:30",
+    "contact": {
+      "whatsappNumber": "+919876543210",
+      "email": "hello@weddingwebsite.com"
+    },
+    "hero": {
+      "title": "మేము ఏకమవుతున్నాం!",
+      "subtitle": "మా నూతన జీవితానికి శుభారంభం పలకటానికి మీ అందరిని ఆహ్వానిస్తున్నాం."
+    },
+    "invitation": {
+      "greeting": "నమస్కారం",
+      "message": "పెద్దల ఆశీస్సులతో, మా వివాహానికి మిమ్మల్ని సాదరంగా ఆహ్వానిస్తున్నాము. దయచేసి మీ ప్రేమ మరియు ఆశీస్సులతో ఈ ప్రత్యేక సందర్భాన్ని జరుపుకోవడానికి మాతో భాగస్వాములవ్వండి.",
+      "signOff": "ప్రేమతో, కుటుంబ సభ్యులు"
+    },
+    "countdown": {
+      "days": "రోజులు",
+      "hours": "గంటలు",
+      "minutes": "నిమిషాలు",
+      "seconds": "సెకన్లు"
+    },
+    "eventsTitle": "వేదిక",
+    "viewOnMap": "మ్యాప్‌లో చూడండి",
+    "events": [
+      {
+        "id": "wedding",
+        "title": "ముహూర్తం (వివాహం)",
+        "date": "ఏప్రిల్ 26, 2026",
+        "time": "ఉదయం 11:59",
+        "venue": "సిరి ఫంక్షన్ హాల్ - గోదావరిఖని సిటీ",
+        "address": "అడ్డగుంట పల్లి, గోదావరిఖని, రామగుండం, తెలంగాణ 505209",
+        "mapLink": "https://maps.app.goo.gl/pXndJ9iDpozvn353A"
+      }
+    ],
+    "galleryTitle": "చిత్రాలు (గ్యాలరీ)",
+    "photoText": "ఫోటో",
+    "galleryPaths": [
+      "/assets/gallery/photo1.jpg",
+      "/assets/gallery/photo2.jpg",
+      "/assets/gallery/photo3.jpg",
+      "/assets/gallery/photo4.jpg",
+      "/assets/gallery/photo5.jpg",
+      "/assets/gallery/photo6.jpg"
+    ],
+    "rsvpTitle": "సమాచారం (RSVP)",
+    "rsvpSubtitle": "మీరు వస్తారని ఆశిస్తున్నాం",
+    "rsvpForm": {
+      "nameLabel": "పూర్తి పేరు *",
+      "namePlaceholder": "మీ పేరు నమోదు చేయండి",
+      "guestsLabel": "అతిధుల సంఖ్య",
+      "guestsMore": "5 కంటే ఎక్కువ",
+      "attendLabel": "మీరు వస్తారా? *",
+      "attendYes": "తప్పక వస్తాము",
+      "attendNo": "క్షమించాలి, రాలేము",
+      "messageLabel": "మాకు శుభాకాంక్షలు (ఐచ్ఛికం)",
+      "messagePlaceholder": "మీ సందేశం...",
+      "submitBtn": "పంపిచండి",
+      "submittingText": "పంపుతున్నాము...",
+      "errorText": "ఏదో పొరపాటు జరిగింది. మళ్ళీ ప్రయత్నించండి.",
+      "successTitle": "ధన్యవాదాలు!",
+      "successDesc": "మీ స్పందన విజయవంతంగా నమోదు చేయబడింది.",
+      "submitAnotherBtn": "మరొక స్పందన పంపండి"
+    },
+    "footer": {
+      "madeWith": "ప్రత్యేకమైన రోజు కోసం అపారమైన",
+      "forSpecialDay": "ప్రేమతో రూపొందించబడింది",
+      "allRights": "సర్వ హక్కులు ప్రత్యేకించబడినవి.",
+      "contact": "సంప్రదించండి"
+    },
+    "gallery": {
+      "title": "గ్యాలరీ"
+    },
+    "ourStory": {
+      "paragraphs": [
+        "మేము ఒకరికొకరు వెతుక్కోలేదు - కేవలం మా సొంత జీవితాలను గడుపుతూ, మా దినచర్యలు, కుటుంబాలు మరియు స్నేహాలలో సౌకర్యాన్ని పొందుతున్నాము.",
+        "అప్పుడు మా కుటుంబాలు మమ్మల్ని పరిచయం చేశాయి.",
+        "ఒక సాధారణ సమావేశంగా ప్రారంభమైనది నెమ్మదిగా అర్థవంతమైనదిగా మారింది. మేము మాట్లాడుకోవడం, కలిసి సమయం గడపడం మరియు ఒకరినొకరు అర్థం చేసుకోవడం ప్రారంభించాము.",
+        "ఆమె అతడిలో దయ, నిజాయితీ మరియు శ్రద్ధ గల వ్యక్తిని చూసింది.",
+        "అతను ఆమెలో వెచ్చని, బలమైన మరియు అందమైన ఆత్మను కనుగొన్నాడు - అతని జీవితంలో ఆనందం, సౌలభ్యం మరియు అర్థాన్ని తెచ్చిన వ్యక్తి.",
+        "ప్రేమ, నమ్మకం మరియు భవిష్యత్తుపై ఆశతో - 'కేవలం ఒక సంబంధం' గా ప్రారంభమైనది ఒక ఎంపికగా మారింది.",
+        "ఈ రోజు, మేము ఒకరినొకరు ఎంచుకున్నాము - కలిసి ఎదగడానికి, ఒకరికొకరు మద్దతు ఇవ్వడానికి మరియు ఆనందం, ప్రేమ మరియు లెక్కలేనన్ని అందమైన క్షణాలతో కూడిన జీవితాన్ని నిర్మించడానికి."
+      ],
+      "closing": "శాశ్వతంగా"
+    },
+    "nav": {
+      "home": "ప్రారంభం",
+      "invitation": "ఆహ్వానం",
+      "events": "వేదిక",
+      "gallery": "గ్యాలరీ",
+      "ourStory": "మా కథ",
+      "rsvp": "సమాచారం"
+    }
+  }
+}

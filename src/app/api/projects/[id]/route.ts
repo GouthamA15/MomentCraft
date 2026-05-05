@@ -65,23 +65,30 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Project not found." }, { status: 404 });
     }
 
+    const updatePayload: any = {
+      vendor_id: vendorId,
+      client_id: clientId,
+      template_id: templateId,
+      project_name: projectName,
+      event_date: body.event_date || null,
+      theme_color: body.theme_color || null,
+      font_family: body.font_family || null,
+      background_music: body.background_music || null,
+      seo_title: body.seo_title || null,
+      seo_description: body.seo_description || null,
+      og_image: body.og_image || null,
+      album_enabled: body.album_enabled ?? true,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Only update status if explicitly provided in the request body
+    if (body.status) {
+      updatePayload.status = body.status;
+    }
+
     const { error: projectUpdateError } = await supabase
       .from("projects")
-      .update({
-        vendor_id: vendorId,
-        client_id: clientId,
-        template_id: templateId,
-        project_name: projectName,
-        status: body.status || "draft",
-        event_date: body.event_date || null,
-        theme_color: body.theme_color || null,
-        font_family: body.font_family || null,
-        background_music: body.background_music || null,
-        seo_title: body.seo_title || null,
-        seo_description: body.seo_description || null,
-        og_image: body.og_image || null,
-        album_enabled: body.album_enabled ?? true,
-      })
+      .update(updatePayload)
       .eq("id", id);
 
     if (projectUpdateError) {
@@ -102,8 +109,8 @@ export async function PATCH(request: Request, context: RouteContext) {
         const langObj = (translationsInput as any)[language_code];
         if (!langObj || typeof langObj !== "object") continue;
 
-        for (const field_key of TEMPLATE_FIELD_KEYS) {
-          if (!isTemplateFieldKey(field_key) || !isTemplateLanguageCode(language_code)) continue;
+        for (const field_key of Object.keys(langObj)) {
+          if (!isTemplateLanguageCode(language_code)) continue;
           const raw = (langObj as any)[field_key];
           const trimmed = typeof raw === "string" ? raw.trim() : "";
 
@@ -137,40 +144,6 @@ export async function PATCH(request: Request, context: RouteContext) {
         .upsert(toUpsert, { onConflict: "project_id,field_key,language_code" });
       if (upsertError) {
         return NextResponse.json({ error: upsertError.message }, { status: 500 });
-      }
-    }
-
-    const managedAssetTypes = ["cover_image", "background_music", "og_image"];
-    const { error: managedAssetsDeleteError } = await supabase
-      .from("project_assets")
-      .delete()
-      .eq("project_id", id)
-      .in("asset_type", managedAssetTypes);
-
-    if (managedAssetsDeleteError) {
-      return NextResponse.json({ error: managedAssetsDeleteError.message }, { status: 500 });
-    }
-
-    const assetRows: Array<{ project_id: string; asset_type: string; file_url: string; file_name: string | null }> = [];
-    if (body.cover_image) {
-      assetRows.push({ project_id: id, asset_type: "cover_image", file_url: body.cover_image, file_name: null });
-    }
-    if (body.background_music) {
-      assetRows.push({
-        project_id: id,
-        asset_type: "background_music",
-        file_url: body.background_music,
-        file_name: null,
-      });
-    }
-    if (body.og_image) {
-      assetRows.push({ project_id: id, asset_type: "og_image", file_url: body.og_image, file_name: null });
-    }
-
-    if (assetRows.length > 0) {
-      const { error: assetsInsertError } = await supabase.from("project_assets").insert(assetRows);
-      if (assetsInsertError) {
-        return NextResponse.json({ error: assetsInsertError.message }, { status: 500 });
       }
     }
 

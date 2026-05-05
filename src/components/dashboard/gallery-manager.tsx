@@ -17,14 +17,12 @@ export type GalleryItem = {
 };
 
 type Props = {
-  projectId: string;
-  initialMedia?: ProjectMediaRow[];
   sections: Array<{ key: string; label: string }>;
   onPendingMediaChange?: (items: GalleryItem[]) => void;
 };
 
-export function GalleryManager({ projectId, initialMedia = [], sections, onPendingMediaChange }: Props) {
-  // Initialize state with grouped structure as empty arrays
+export function GalleryManager({ sections, onPendingMediaChange }: Props) {
+  // Initialize gallery state for pending items only
   const [galleryState, setGalleryState] = useState<Record<string, GalleryItem[]>>(() => {
     const initial: Record<string, GalleryItem[]> = {};
     sections.forEach((s) => {
@@ -35,61 +33,9 @@ export function GalleryManager({ projectId, initialMedia = [], sections, onPendi
 
   // Sync pending items to parent whenever galleryState changes
   useEffect(() => {
-    const allPending = Object.values(galleryState)
-      .flat()
-      .filter((i) => !i.isExisting);
+    const allPending = Object.values(galleryState).flat();
     onPendingMediaChange?.(allPending);
   }, [galleryState, onPendingMediaChange]);
-
-  // Fetch media from Supabase and populate state
-  useEffect(() => {
-    // Guard condition: do not run fetch if projectId is missing
-    if (!projectId) return;
-
-    async function loadMedia() {
-      const supabase = createClient();
-      
-      // Select from project_media, filter by project_id, order by sort_order
-      const { data, error } = await supabase
-        .from("project_media")
-        .select("*")
-        .eq("project_id", projectId)
-        .order("sort_order", { ascending: true });
-
-      if (error) {
-        // eslint-disable-next-line no-console
-        console.error("Error fetching project media:", error);
-        return;
-      }
-
-      // Group flat data into structure based on section_key
-      if (data) {
-        const next: Record<string, GalleryItem[]> = {};
-        // Initialize next with all possible section keys from sections prop
-        sections.forEach((s) => {
-          next[s.key] = [];
-        });
-
-        data.forEach((m) => {
-          if (!next[m.section_key]) return;
-          next[m.section_key].push({
-            id: m.id,
-            url: m.media_url,
-            storagePath: m.storage_path,
-            sectionKey: m.section_key,
-            mediaType: (m.media_type as "image" | "video") || "image",
-            isExisting: true,
-          });
-        });
-        
-        // Update gallery state with grouped DB data
-        setGalleryState(next);
-      }
-    }
-
-    loadMedia();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const activeSectionRef = useRef<string | null>(null);
@@ -130,44 +76,16 @@ export function GalleryManager({ projectId, initialMedia = [], sections, onPendi
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const removeItem = async (sectionKey: string, id: string) => {
-    const sectionItems = galleryState[sectionKey] || [];
-    const itemToRemove = sectionItems.find((i) => i.id === id);
+  const removeItem = (sectionKey: string, id: string) => {
+    const itemToRemove = galleryState[sectionKey]?.find((i) => i.id === id);
     if (!itemToRemove) return;
 
-    // Optimistic update
-    setGalleryState((prev) => {
-      const nextSectionItems = prev[sectionKey].filter((i) => i.id !== id);
-      return { ...prev, [sectionKey]: nextSectionItems };
-    });
+    URL.revokeObjectURL(itemToRemove.url);
 
-    if (itemToRemove.isExisting && itemToRemove.storagePath) {
-      try {
-        const res = await fetch("/api/uploads/delete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            mediaId: itemToRemove.id,
-            storagePath: itemToRemove.storagePath,
-          }),
-        });
-
-        if (!res.ok) {
-          const result = await res.json();
-          throw new Error(result.error || "Delete failed");
-        }
-      } catch (err) {
-        // Rollback on error
-        // eslint-disable-next-line no-console
-        console.error("Failed to delete media:", err);
-        setGalleryState((prev) => ({
-          ...prev,
-          [sectionKey]: [...prev[sectionKey], itemToRemove],
-        }));
-      }
-    } else if (!itemToRemove.isExisting) {
-      URL.revokeObjectURL(itemToRemove.url);
-    }
+    setGalleryState((prev) => ({
+      ...prev,
+      [sectionKey]: prev[sectionKey].filter((i) => i.id !== id),
+    }));
   };
 
   return (

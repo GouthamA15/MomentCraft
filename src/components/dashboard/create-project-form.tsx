@@ -1,21 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { slugifyProjectName } from "@/lib/utils/slug";
 import type { ClientRow, TemplateRow, VendorRow } from "@/types/project";
 import {
-  TEMPLATE_FIELD_KEYS,
-  type TemplateFieldKey,
   TEMPLATE_LANGUAGE_CODES,
   type TemplateLanguageCode,
 } from "@/constants/template-fields";
-import { getTemplateConfig } from "@/constants/template-config";
+import { FaPlay, FaTrash } from "react-icons/fa";
+import { createClient } from "@/lib/supabase/client";
 import { AssetUploader } from "@/components/dashboard/asset-uploader";
 import { GalleryManager, type GalleryItem } from "@/components/dashboard/gallery-manager";
-import type { ProjectMediaRow } from "@/lib/template-registry";
+import { type ProjectMediaRow, resolveTemplateComponents } from "@/lib/template-registry";
 
 type ProjectEditInitialData = {
   project_name: string;
@@ -27,44 +26,21 @@ type ProjectEditInitialData = {
   theme_color: string | null;
   font_family: string | null;
   background_music: string | null;
-  cover_image: string | null;
   album_enabled?: boolean;
   media?: ProjectMediaRow[];
   seo_title: string | null;
   seo_description: string | null;
   og_image: string | null;
   translations: Partial<
-    Record<TemplateLanguageCode, Partial<Record<TemplateFieldKey, string | null>>>
+    Record<TemplateLanguageCode, Partial<Record<string, string | null>>>
   >;
 };
 
-type TranslationsState = Record<TemplateLanguageCode, Record<TemplateFieldKey, string>>;
-
-const FIELD_DEFS: Array<{ key: TemplateFieldKey; label: string; multiline?: boolean }>= [
-  { key: "title", label: "Title" },
-  { key: "subtitle", label: "Subtitle", multiline: true },
-  { key: "bride_name", label: "Bride Name" },
-  { key: "groom_name", label: "Groom Name" },
-  { key: "welcome_message", label: "Welcome Message", multiline: true },
-  { key: "story_title", label: "Story Title" },
-  { key: "story_text", label: "Story Text", multiline: true },
-  { key: "venue_name", label: "Venue Name" },
-  { key: "venue_address", label: "Venue Address", multiline: true },
-  { key: "event_time", label: "Event Time" },
-  { key: "event_date_text", label: "Event Date Text" },
-  { key: "rsvp_text", label: "RSVP Text", multiline: true },
-  { key: "footer_message", label: "Footer Message", multiline: true },
-  { key: "family_message", label: "Family Message", multiline: true },
-  { key: "custom_note", label: "Custom Note", multiline: true },
-];
+type TranslationsState = Record<TemplateLanguageCode, Record<string, string>>;
 
 function createEmptyTranslationsState(): TranslationsState {
-  const perLang = Object.fromEntries(
-    TEMPLATE_FIELD_KEYS.map((key) => [key, ""]),
-  ) as Record<TemplateFieldKey, string>;
-
   return Object.fromEntries(
-    TEMPLATE_LANGUAGE_CODES.map((lang) => [lang, { ...perLang }]),
+    TEMPLATE_LANGUAGE_CODES.map((lang) => [lang, {}]),
   ) as TranslationsState;
 }
 
@@ -76,8 +52,7 @@ function buildInitialTranslationsState(initialData?: ProjectEditInitialData): Tr
   for (const lang of TEMPLATE_LANGUAGE_CODES) {
     const row = source[lang];
     if (!row) continue;
-    for (const key of TEMPLATE_FIELD_KEYS) {
-      const value = row[key];
+    for (const [key, value] of Object.entries(row)) {
       if (typeof value === "string") {
         state[lang][key] = value;
       }
@@ -110,6 +85,8 @@ export function CreateProjectForm({
   const [success, setSuccess] = useState("");
   const [vendorsState, setVendorsState] = useState<VendorRow[]>(vendors);
   const [clientsState, setClientsState] = useState<ClientRow[]>(clients);
+  
+  // Basic Info States
   const [projectName, setProjectName] = useState(initialData?.project_name ?? "");
   const [eventDate, setEventDate] = useState(initialData?.event_date ?? "");
   const [deliveryStatus, setDeliveryStatus] = useState(
@@ -117,30 +94,99 @@ export function CreateProjectForm({
   );
   const [vendorId, setVendorId] = useState(initialData?.vendor_id ?? "");
   const [clientId, setClientId] = useState(initialData?.client_id ?? "");
+  const [albumEnabled, setAlbumEnabled] = useState(initialData?.album_enabled ?? true);
+  
+  const [musicFile, setMusicFile] = useState<File | null>(null);
+  
   const templateId = initialData?.template_id ?? selectedTemplate?.id ?? "";
-  const templateCode = selectedTemplate?.template_code ?? null;
-  const templateConfig = useMemo(() => getTemplateConfig(templateCode), [templateCode]);
+  const currentTemplate = templates.find((t) => t.id === templateId);
+  const templateCode = currentTemplate?.template_code ?? null;
+  
+  const templateConfig = useMemo(() => {
+    const components = resolveTemplateComponents(templateCode);
+    return components?.config || null;
+  }, [templateCode]);
+
+  // Generic Field States
   const [activeLanguage, setActiveLanguage] = useState<TemplateLanguageCode>("en");
   const [translations, setTranslations] = useState<TranslationsState>(() =>
     buildInitialTranslationsState(initialData),
   );
-  const [themeColor, setThemeColor] = useState(initialData?.theme_color ?? "#800000");
-  const [fontFamily, setFontFamily] = useState(initialData?.font_family ?? "Playfair Display");
-  const [backgroundMusic, setBackgroundMusic] = useState(initialData?.background_music ?? "");
-  const [coverImage, setCoverImage] = useState(initialData?.cover_image ?? "");
-  const [seoTitle, setSeoTitle] = useState(initialData?.seo_title ?? "");
-  const [seoDescription, setSeoDescription] = useState(initialData?.seo_description ?? "");
-  const [ogImage, setOgImage] = useState(initialData?.og_image ?? "");
-  const [albumEnabled, setAlbumEnabled] = useState(initialData?.album_enabled ?? true);
+  
+  // Non-translatable generic values (mapped to DB columns where appropriate)
+  const [genericValues, setGenericValues] = useState<Record<string, string>>({
+    theme_color: initialData?.theme_color ?? "#800000",
+    font_family: initialData?.font_family ?? "Playfair Display",
+    background_music: initialData?.background_music ?? "",
+    og_image: initialData?.og_image ?? "",
+  });
+
   const [pendingGalleryMedia, setPendingGalleryMedia] = useState<GalleryItem[]>([]);
+  const [existingMedia, setExistingMedia] = useState<ProjectMediaRow[]>(initialData?.media ?? []);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!projectId) return;
+
+    async function fetchMedia() {
+      const supabase = createClient();
+      
+      // Verify session for RLS debugging
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        // eslint-disable-next-line no-console
+        console.warn("NO ACTIVE SESSION FOUND - RLS may block media fetch");
+      }
+
+      const { data, error } = await supabase
+        .from("project_media")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        // eslint-disable-next-line no-console
+        console.error("Error fetching media:", error);
+        return;
+      }
+      
+      // eslint-disable-next-line no-console
+      console.log("EDIT MEDIA:", data);
+      
+      if (data && data.length > 0) {
+        setExistingMedia(data);
+      }
+    }
+
+    fetchMedia();
+  }, [projectId]);
+
+  const handleDeleteExistingMedia = (mediaId: string) => {
+    setDeletedIds((prev) => {
+      const next = new Set(prev);
+      next.add(mediaId);
+      return next;
+    });
+  };
+
+  const handleUndoDelete = (mediaId: string) => {
+    setDeletedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(mediaId);
+      return next;
+    });
+  };
+
+  const groupedExistingMedia = useMemo(() => {
+    return existingMedia.reduce((acc, item) => {
+      const key = item.section_key || "other";
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(item);
+      return acc;
+    }, {} as Record<string, ProjectMediaRow[]>);
+  }, [existingMedia]);
 
   const slugPreview = useMemo(() => slugifyProjectName(projectName), [projectName]);
-
-  const visibleFieldDefs = useMemo(() => {
-    if (!templateConfig.translationFields.length) return FIELD_DEFS;
-    const allowed = new Set(templateConfig.translationFields);
-    return FIELD_DEFS.filter((f) => allowed.has(f.key));
-  }, [templateConfig.translationFields]);
 
   const clientsForSelectedVendor = useMemo(() => {
     if (!vendorId) return clientsState;
@@ -276,26 +322,63 @@ export function CreateProjectForm({
 
     setLoading(true);
 
-    const payload = {
+    let finalMusicUrl = genericValues.background_music;
+    const isEdit = Boolean(projectId);
+
+    // Upload music file if selected
+    if (musicFile && isEdit) {
+      setSuccess("Uploading music...");
+      
+      try {
+        const formData = new FormData();
+        formData.append("file", musicFile);
+        formData.append("projectId", projectId);
+
+        const uploadRes = await fetch("/api/uploads/music", {
+          method: "POST",
+          body: formData,
+        });
+
+        const uploadResult = await uploadRes.json();
+
+        if (!uploadRes.ok) {
+          throw new Error(uploadResult.error || "Upload failed");
+        }
+
+        finalMusicUrl = uploadResult.publicUrl;
+        
+        // Update local state to show the new URL
+        setGenericValues(prev => ({ ...prev, background_music: finalMusicUrl }));
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("Music upload failed:", err);
+        setError(`Music upload failed: ${err instanceof Error ? err.message : "Unexpected error"}. Project details will still be saved.`);
+      }
+    }
+
+    const payload: any = {
       project_name: projectName,
       event_date: eventDate || null,
       vendor_id: vendorId,
       client_id: clientId,
       template_id: templateId,
-      status: "draft",
       delivery_status: deliveryStatus,
       translations,
-      theme_color: themeColor || null,
-      font_family: fontFamily || null,
-      background_music: backgroundMusic || null,
-      cover_image: coverImage || null,
+      theme_color: genericValues.theme_color || null,
+      font_family: genericValues.font_family || null,
+      background_music: finalMusicUrl || null,
       album_enabled: albumEnabled,
-      seo_title: seoTitle || null,
-      seo_description: seoDescription || null,
-      og_image: ogImage || null,
+      seo_title: translations.en.seo_title || null,
+      seo_description: translations.en.seo_description || null,
+      og_image: genericValues.og_image || null,
     };
 
-    const isEdit = Boolean(projectId);
+    // Only set status to draft for new projects. 
+    // For edits, we preserve the existing status (e.g., "published").
+    if (!isEdit) {
+      payload.status = "draft";
+    }
+
     const endpoint = isEdit ? `/api/projects/${projectId}` : "/api/projects";
     const method = isEdit ? "PATCH" : "POST";
 
@@ -316,7 +399,33 @@ export function CreateProjectForm({
 
       const effectiveProjectId = projectId || result.project_id;
 
-      // Batch upload pending gallery media
+      // Process staged deletions
+      if (deletedIds.size > 0) {
+        setSuccess("Processing image deletions...");
+        const deletionArray = Array.from(deletedIds);
+        for (const mediaId of deletionArray) {
+          const item = existingMedia.find((m) => m.id === mediaId);
+          if (!item) continue;
+
+          try {
+            const delRes = await fetch("/api/uploads/delete", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ mediaId, storagePath: item.storage_path }),
+            });
+            if (!delRes.ok) {
+              // eslint-disable-next-line no-console
+              console.error(`Failed to delete media ${mediaId}`);
+            }
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error(err);
+          }
+        }
+        setExistingMedia((prev) => prev.filter((m) => !deletedIds.has(m.id)));
+        setDeletedIds(new Set());
+      }
+
       if (pendingGalleryMedia.length > 0 && effectiveProjectId) {
         setSuccess("Project saved. Uploading gallery media...");
         for (const item of pendingGalleryMedia) {
@@ -333,16 +442,14 @@ export function CreateProjectForm({
           });
 
           if (!uploadRes.ok) {
-            // We continue with others but maybe show a partial error?
+            // Partial error handling
           }
         }
       }
 
-      // Show success message before redirecting
       setSuccess(projectId ? "Project updated successfully!" : "Project saved successfully!");
       setLoading(false);
 
-      // Redirect after brief delay to let user see success message
       setTimeout(() => {
         router.push("/dashboard/projects?saved=1");
       }, 800);
@@ -352,395 +459,309 @@ export function CreateProjectForm({
     }
   };
 
+  if (!templateConfig) {
+    return (
+      <div className="glass rounded-xl p-8 text-center">
+        <p className="text-slate-300">Loading template configuration...</p>
+      </div>
+    );
+  }
+
+  const renderField = (field: any) => {
+    const isTranslatable = field.translatable;
+    const value = isTranslatable 
+      ? (translations[activeLanguage][field.key] || "")
+      : (genericValues[field.key] || "");
+
+    const onChange = (next: string) => {
+      if (isTranslatable) {
+        setTranslations((prev) => ({
+          ...prev,
+          [activeLanguage]: { ...prev[activeLanguage], [field.key]: next },
+        }));
+      } else {
+        setGenericValues((prev) => ({ ...prev, [field.key]: next }));
+      }
+    };
+
+    switch (field.type) {
+      case "text":
+        return (
+          <div key={field.key} className="space-y-1">
+            <p className="text-xs text-slate-300">{field.label}</p>
+            <Input
+              placeholder={field.placeholder}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+            />
+          </div>
+        );
+      case "textarea":
+        return (
+          <div key={field.key} className="md:col-span-2 space-y-1">
+            <p className="text-xs text-slate-300">{field.label}</p>
+            <textarea
+              className="min-h-24 w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm text-slate-100"
+              placeholder={field.placeholder}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+            />
+          </div>
+        );
+      case "audio":
+        return (
+          <div key={field.key} className="md:col-span-2 space-y-3 rounded-lg border border-white/10 bg-white/5 p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-white">{field.label}</p>
+              {!projectId && <p className="text-[10px] text-amber-300">Save draft to enable upload</p>}
+            </div>
+            <Input
+              placeholder="Direct URL"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+            />
+
+            {projectId && (
+              <div className="space-y-1.5 rounded-md border border-white/5 bg-white/5 p-3">
+                <p className="text-[10px] font-medium text-slate-400">Or upload a file:</p>
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={(e) => setMusicFile(e.target.files?.[0] || null)}
+                  className="block w-full text-xs text-slate-300 file:mr-4 file:rounded-md file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-[10px] file:font-semibold file:text-white hover:file:bg-white/20"
+                />
+                {musicFile && (
+                  <p className="text-[10px] text-emerald-400">
+                    Selected: <span className="font-mono">{musicFile.name}</span>
+                  </p>
+                )}
+                {value && !musicFile && (
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <span className="text-[10px] text-blue-400">Current:</span>
+                    <span className="truncate text-[10px] text-slate-500 font-mono">{value}</span>
+                  </div>
+                )}
+                {value && (
+                  <audio className="mt-2 h-8 w-full" controls src={value} />
+                )}
+              </div>
+            )}
+          </div>
+        );
+      case "gallery":
+        return (
+          <div key={field.key} className="md:col-span-2 space-y-4 rounded-xl border border-white/10 bg-white/5 p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">{field.label}</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-300">{albumEnabled ? "Enabled" : "Disabled"}</span>
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-white/20 bg-white/5 accent-gold"
+                  checked={albumEnabled}
+                  onChange={(e) => setAlbumEnabled(e.target.checked)}
+                />
+              </div>
+            </div>
+            {albumEnabled && (
+              <div className="mt-2 pt-4 border-t border-white/10">
+                {projectId ? (
+                  <GalleryManager
+                    onPendingMediaChange={setPendingGalleryMedia}
+                    sections={templateConfig.gallery_sections || []}
+                  />
+                ) : (
+                  <p className="text-xs italic text-amber-200">Save the project draft first to enable media uploads.</p>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      case "cards":
+        return (
+          <div key={field.key} className="md:col-span-2 p-4 rounded-lg border border-dashed border-white/20 text-center">
+            <p className="text-xs text-slate-400">{field.label} (Card Grouping Coming Soon)</p>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
-    <form className="space-y-5" onSubmit={handleSaveDraft}>
+    <form className="space-y-6" onSubmit={handleSaveDraft}>
       <section className="glass rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-white">Basic Project Info</h3>
-        {!templateId ? (
-          <p className="mt-2 rounded-lg border border-amber-400/30 bg-amber-500/10 p-2 text-sm text-amber-100">
-            Select a template from the Templates page first.
-          </p>
-        ) : null}
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <h3 className="text-sm font-semibold text-white mb-4">Core Project Details</h3>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <div>
             <p className="mb-1 text-xs text-slate-300">Project Name</p>
             <Input value={projectName} onChange={(e) => setProjectName(e.target.value)} />
           </div>
           <div>
-            <p className="mb-1 text-xs text-slate-300">Auto Slug</p>
-            <Input value={slugPreview} readOnly />
+            <p className="mb-1 text-xs text-slate-300">Slug Preview</p>
+            <Input value={slugPreview} readOnly className="bg-white/5" />
           </div>
           <div>
             <p className="mb-1 text-xs text-slate-300">Event Date</p>
             <Input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
           </div>
           <div>
-            <p className="mb-1 text-xs text-slate-300">Delivery Status</p>
-            <select
-              className="w-full rounded-lg border border-white/20 bg-white/5 p-2 text-sm text-slate-100"
-              value={deliveryStatus}
-              onChange={(e) => setDeliveryStatus(e.target.value)}
-            >
-              <option value="pending" className="bg-slate-900">
-                Pending
-              </option>
-              <option value="approved" className="bg-slate-900">
-                Approved
-              </option>
-              <option value="in_progress" className="bg-slate-900">
-                In Progress
-              </option>
-              <option value="client_review" className="bg-slate-900">
-                Client Review
-              </option>
-              <option value="live" className="bg-slate-900">
-                Live
-              </option>
-              <option value="completed" className="bg-slate-900">
-                Completed
-              </option>
-              <option value="paused" className="bg-slate-900">
-                Paused
-              </option>
-              <option value="rejected" className="bg-slate-900">
-                Rejected
-              </option>
-            </select>
-          </div>
-          <div>
             <p className="mb-1 text-xs text-slate-300">Vendor</p>
             {showCreateVendorInline ? (
-              <div className="space-y-2">
-                <p className="text-xs text-slate-300">No vendors exist yet. Create one to continue.</p>
-                <Input
-                  placeholder="Business Name"
-                  value={vendorDraft.business_name}
-                  onChange={(e) => setVendorDraft((d) => ({ ...d, business_name: e.target.value }))}
-                />
-                <div className="grid gap-2 md:grid-cols-2">
-                  <Input
-                    placeholder="Owner Name"
-                    value={vendorDraft.owner_name}
-                    onChange={(e) => setVendorDraft((d) => ({ ...d, owner_name: e.target.value }))}
-                  />
-                  <Input
-                    placeholder="Phone"
-                    value={vendorDraft.phone}
-                    onChange={(e) => setVendorDraft((d) => ({ ...d, phone: e.target.value }))}
-                  />
-                  <Input
-                    placeholder="Email"
-                    value={vendorDraft.email}
-                    onChange={(e) => setVendorDraft((d) => ({ ...d, email: e.target.value }))}
-                  />
-                  <Input
-                    placeholder="Address"
-                    value={vendorDraft.address}
-                    onChange={(e) => setVendorDraft((d) => ({ ...d, address: e.target.value }))}
-                  />
-                </div>
-                <Button type="button" variant="outline" disabled={inlineSaving} onClick={createVendorInline}>
-                  {inlineSaving ? "Creating..." : "+ Create Vendor"}
-                </Button>
-              </div>
+              <Button type="button" variant="outline" className="w-full" disabled={inlineSaving} onClick={createVendorInline}>
+                + Create Vendor
+              </Button>
             ) : (
               <select
                 value={vendorId}
-                onChange={(e) => {
-                  setVendorId(e.target.value);
-                  setClientId("");
-                }}
-                className="h-10 w-full rounded-lg border border-white/20 bg-white/5 px-3 text-sm"
+                onChange={(e) => { setVendorId(e.target.value); setClientId(""); }}
+                className="h-10 w-full rounded-lg border border-white/20 bg-slate-900 px-3 text-sm text-white"
               >
                 <option value="">Select vendor</option>
-                {vendorsState.map((v) => (
-                  <option key={v.id} value={v.id} className="text-black">
-                    {v.business_name}
-                  </option>
-                ))}
+                {vendorsState.map((v) => <option key={v.id} value={v.id}>{v.business_name}</option>)}
               </select>
             )}
           </div>
           <div>
             <p className="mb-1 text-xs text-slate-300">Client</p>
             {showCreateClientInline ? (
-              <div className="space-y-2">
-                <p className="text-xs text-slate-300">No clients found for this vendor. Create one to continue.</p>
-                <select
-                  value={clientDraft.vendor_id || vendorId}
-                  onChange={(e) => setClientDraft((d) => ({ ...d, vendor_id: e.target.value }))}
-                  className="h-10 w-full rounded-lg border border-white/20 bg-white/5 px-3 text-sm"
-                  disabled={vendorsState.length === 0}
-                >
-                  <option value="">Select vendor</option>
-                  {vendorsState.map((v) => (
-                    <option key={v.id} value={v.id} className="text-black">
-                      {v.business_name}
-                    </option>
-                  ))}
-                </select>
-                <Input
-                  placeholder="Client Name"
-                  value={clientDraft.client_name}
-                  onChange={(e) => setClientDraft((d) => ({ ...d, client_name: e.target.value }))}
-                />
-                <div className="grid gap-2 md:grid-cols-2">
-                  <Input
-                    placeholder="Phone"
-                    value={clientDraft.phone}
-                    onChange={(e) => setClientDraft((d) => ({ ...d, phone: e.target.value }))}
-                  />
-                  <Input
-                    placeholder="Email"
-                    value={clientDraft.email}
-                    onChange={(e) => setClientDraft((d) => ({ ...d, email: e.target.value }))}
-                  />
-                  <Input
-                    placeholder="Event Type"
-                    value={clientDraft.event_type}
-                    onChange={(e) => setClientDraft((d) => ({ ...d, event_type: e.target.value }))}
-                  />
-                </div>
-                <Button type="button" variant="outline" disabled={inlineSaving} onClick={createClientInline}>
-                  {inlineSaving ? "Creating..." : "+ Create Client"}
-                </Button>
-              </div>
+              <Button type="button" variant="outline" className="w-full" disabled={inlineSaving} onClick={createClientInline}>
+                + Create Client
+              </Button>
             ) : (
               <select
                 value={clientId}
                 onChange={(e) => setClientId(e.target.value)}
-                className="h-10 w-full rounded-lg border border-white/20 bg-white/5 px-3 text-sm"
+                className="h-10 w-full rounded-lg border border-white/20 bg-slate-900 px-3 text-sm text-white"
               >
                 <option value="">Select client</option>
-                {clientsForSelectedVendor.map((c) => (
-                  <option key={c.id} value={c.id} className="text-black">
-                    {c.client_name}
-                  </option>
-                ))}
+                {clientsForSelectedVendor.map((c) => <option key={c.id} value={c.id}>{c.client_name}</option>)}
               </select>
             )}
           </div>
           <div>
-            <p className="mb-1 text-xs text-slate-300">Template Selected (readonly)</p>
-            <Input
-              value={templates.find((t) => t.id === templateId)?.template_name ?? ""}
-              readOnly
-            />
-          </div>
-          <div>
-            <p className="mb-1 text-xs text-slate-300">Project Status</p>
-            <Input value="draft" readOnly />
+            <p className="mb-1 text-xs text-slate-300">Template</p>
+            <Input value={currentTemplate?.template_name ?? ""} readOnly className="bg-white/5" />
           </div>
         </div>
       </section>
 
       <section className="glass rounded-xl p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
-            <h3 className="text-sm font-semibold text-white">Project Translations</h3>
-            <p className="mt-1 text-xs text-slate-300">Fill English, Telugu, and Hindi values for each field.</p>
+            <h3 className="text-sm font-semibold text-white">Template Content</h3>
+            <p className="text-xs text-slate-400 mt-1">Fields defined by: {templateCode}</p>
           </div>
-
-          <div className="flex gap-2">
+          <div className="flex bg-white/5 rounded-lg p-1 gap-1">
             {TEMPLATE_LANGUAGE_CODES.map((lang) => (
-              <Button
+              <button
                 key={lang}
                 type="button"
-                variant={activeLanguage === lang ? "default" : "outline"}
                 onClick={() => setActiveLanguage(lang)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  activeLanguage === lang ? "bg-blue-500 text-white shadow-lg" : "text-slate-400 hover:text-white"
+                }`}
               >
-                {lang === "en" ? "English" : lang === "te" ? "తెలుగు" : "हिंदी"}
-              </Button>
+                {lang.toUpperCase()}
+              </button>
             ))}
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          {visibleFieldDefs.map((field) => {
-            const value = translations[activeLanguage][field.key];
+        <div className="grid gap-6 md:grid-cols-2">
+          {templateConfig.fields.map((field: any) => renderField(field))}
+        </div>
+      </section>
 
-            if (field.multiline) {
-              return (
-                <div key={field.key} className="md:col-span-2">
-                  <p className="mb-1 text-xs text-slate-300">{field.label}</p>
-                  <textarea
-                    className="min-h-24 w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm"
-                    value={value}
-                    onChange={(e) => {
-                      const next = e.target.value;
-                      setTranslations((prev) => ({
-                        ...prev,
-                        [activeLanguage]: { ...prev[activeLanguage], [field.key]: next },
-                      }));
-                    }}
-                  />
-                </div>
-              );
-            }
+      {/* Available Photos Section */}
+      {projectId && existingMedia.length > 0 && (
+        <section className="glass rounded-xl p-6 space-y-8">
+          <div>
+            <h3 className="text-lg font-bold text-white">Available Photos</h3>
+            <p className="text-xs text-slate-400">Currently uploaded media grouped by section.</p>
+          </div>
 
+          {Object.entries(groupedExistingMedia).map(([sectionKey, items]) => {
+            const sectionLabel = templateConfig.gallery_sections?.find((s: any) => s.key === sectionKey)?.label || sectionKey;
             return (
-              <div key={field.key}>
-                <p className="mb-1 text-xs text-slate-300">{field.label}</p>
-                <Input
-                  value={value}
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    setTranslations((prev) => ({
-                      ...prev,
-                      [activeLanguage]: { ...prev[activeLanguage], [field.key]: next },
-                    }));
-                  }}
-                />
+              <div key={sectionKey} className="space-y-4">
+                <h4 className="text-sm font-semibold text-gold capitalize">{sectionLabel}</h4>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                  {items.map((item) => {
+                    const isDeleted = deletedIds.has(item.id);
+                    return (
+                      <div
+                        key={item.id}
+                        className={`group relative aspect-square overflow-hidden rounded-lg border border-white/10 bg-white/5 transition-opacity ${
+                          isDeleted ? "opacity-40 grayscale" : ""
+                        }`}
+                      >
+                        {item.media_type === "video" ? (
+                          <div className="flex h-full w-full items-center justify-center bg-slate-800">
+                            <FaPlay className="text-xl text-gold" />
+                          </div>
+                        ) : (
+                          <img
+                            src={item.media_url}
+                            alt="Uploaded media"
+                            className="h-full w-full object-cover"
+                          />
+                        )}
+
+                        {isDeleted ? (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 p-2 text-center">
+                            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-red-400">
+                              Will be removed
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => handleUndoDelete(item.id)}
+                              className="rounded bg-white/10 px-2 py-1 text-[10px] text-white hover:bg-white/20"
+                            >
+                              Undo
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteExistingMedia(item.id)}
+                            className="absolute right-2 top-2 z-20 rounded-full bg-red-600 p-2 text-white opacity-0 transition-opacity group-hover:opacity-100 shadow-lg"
+                            title="Mark for deletion"
+                          >
+                            <FaTrash size={12} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
-        </div>
-      </section>
-
-      <section className="glass rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-white">Design Settings</h3>
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <Input placeholder="Theme Color" value={themeColor} onChange={(e) => setThemeColor(e.target.value)} />
-          <Input placeholder="Font Family" value={fontFamily} onChange={(e) => setFontFamily(e.target.value)} />
-          {templateConfig.media.music ? (
-            <Input
-              placeholder="Background Music URL (upload)"
-              value={backgroundMusic}
-              onChange={(e) => setBackgroundMusic(e.target.value)}
-            />
-          ) : null}
-          {templateConfig.media.coverImage ? (
-            <Input
-              placeholder="Cover Image URL (upload)"
-              value={coverImage}
-              onChange={(e) => setCoverImage(e.target.value)}
-            />
-          ) : null}
-        </div>
-
-        {(templateConfig.media.music || templateConfig.media.coverImage) && projectId ? (
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {templateConfig.media.music ? (
-              <AssetUploader
-                projectId={projectId}
-                kind="background_music"
-                label="Background Music"
-                accept="audio/*"
-                value={backgroundMusic}
-                onChange={setBackgroundMusic}
-              />
-            ) : null}
-            {templateConfig.media.coverImage ? (
-              <AssetUploader
-                projectId={projectId}
-                kind="cover_image"
-                label="Cover Image"
-                accept="image/*"
-                value={coverImage}
-                onChange={setCoverImage}
-              />
-            ) : null}
-          </div>
-        ) : null}
-
-        {(templateConfig.media.music || templateConfig.media.coverImage) && !projectId ? (
-          <p className="mt-3 text-xs text-slate-300">
-            Save the project once to enable uploads.
-          </p>
-        ) : null}
-      </section>
-
-      <section className="glass rounded-xl p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-white">Gallery Feature</h3>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-300">{albumEnabled ? "Enabled" : "Disabled"}</span>
-            <input
-              type="checkbox"
-              className="h-5 w-5 rounded border-white/20 bg-white/5 accent-gold"
-              checked={albumEnabled}
-              onChange={(e) => setAlbumEnabled(e.target.checked)}
-            />
-          </div>
-        </div>
-        <p className="mt-1 text-xs text-slate-300">
-          Enable or disable the wedding album/gallery for this project.
-        </p>
-
-        {albumEnabled && (
-          <div className="mt-6 border-t border-white/10 pt-6">
-            <h3 className="mb-4 text-sm font-semibold text-white">Media Management</h3>
-            {projectId ? (
-              <GalleryManager
-                projectId={projectId}
-                initialMedia={initialData?.media}
-                onPendingMediaChange={setPendingGalleryMedia}
-                sections={templateConfig.gallerySections || [
-                  { key: "haldi", label: "Haldi Ceremony" },
-                  { key: "mehendi", label: "Mehendi & Sangeet" },
-                  { key: "wedding", label: "The Wedding" },
-                ]}
-              />
-            ) : (
-              <p className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-100">
-                Save the project draft first to enable media uploads.
-              </p>
-            )}
-          </div>
-        )}
-      </section>
-
-      {templateConfig.features.seo ? (
-        <section className="glass rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-white">SEO</h3>
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <Input placeholder="SEO Title" value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} />
-            {templateConfig.media.ogImage ? (
-              <Input placeholder="OG Image URL (upload)" value={ogImage} onChange={(e) => setOgImage(e.target.value)} />
-            ) : null}
-          </div>
-          <textarea
-            className="mt-3 min-h-20 w-full rounded-lg border border-white/20 bg-white/5 p-3 text-sm"
-            placeholder="SEO Description"
-            value={seoDescription}
-            onChange={(e) => setSeoDescription(e.target.value)}
-          />
-
-          {templateConfig.media.ogImage && projectId ? (
-            <div className="mt-4">
-              <AssetUploader
-                projectId={projectId}
-                kind="og_image"
-                label="OG Image"
-                accept="image/*"
-                value={ogImage}
-                onChange={setOgImage}
-              />
-            </div>
-          ) : null}
-
-          {templateConfig.media.ogImage && !projectId ? (
-            <p className="mt-3 text-xs text-slate-300">
-              Save the project once to enable uploads.
-            </p>
-          ) : null}
         </section>
-      ) : null}
+      )}
 
-      {error ? <p className="rounded-lg border border-red-400/30 bg-red-500/10 p-2 text-sm text-red-200">{error}</p> : null}
-      {success ? <p className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 p-2 text-sm text-emerald-200">{success}</p> : null}
+      {projectId && existingMedia.length === 0 && (
+        <section className="glass rounded-xl p-6 text-center">
+          <h3 className="text-sm font-semibold text-white mb-2">Available Photos</h3>
+          <p className="text-xs italic text-slate-400">No images uploaded yet.</p>
+        </section>
+      )}
 
-      <div className="flex flex-wrap gap-2">
-        <Button disabled={loading || !templateId} isLoading={loading}>
-          {projectId ? "Update Draft" : "Save Draft"}
+      {error && <p className="rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">{error}</p>}
+      {success && <p className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">{success}</p>}
+
+      <div className="sticky bottom-4 flex flex-wrap gap-3 p-4 glass rounded-2xl shadow-2xl z-50">
+        <Button disabled={loading || !templateId} isLoading={loading} className="min-w-[120px]">
+          {projectId ? "Update Project" : "Create Project"}
         </Button>
         <Button
           type="button"
           variant="outline"
-          disabled={!selectedTemplate?.template_code}
+          disabled={!templateCode}
           onClick={() => {
-            if (!selectedTemplate?.template_code) return;
-            router.push(`/dashboard/templates/preview/${selectedTemplate.template_code}`);
+            if (!templateCode) return;
+            router.push(`/dashboard/templates/preview/${templateCode}`);
           }}
         >
           Preview

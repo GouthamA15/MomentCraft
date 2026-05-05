@@ -5,6 +5,7 @@ import InvitationPage1 from "@/templates/wedding/template-1/InvitationPage";
 import AlbumPage1 from "@/templates/wedding/template-1/AlbumPage";
 import { LanguageProvider as LanguageProvider1 } from "@/templates/wedding/template-1/LanguageContext";
 import { ProjectDataProvider as ProjectDataProvider1 } from "@/templates/wedding/template-1/ProjectDataContext";
+import template1Config from "@/templates/wedding/template-1/template-config.json";
 
 import type {
   TemplateFieldKey,
@@ -39,7 +40,7 @@ export type ProjectTemplateData = {
     album_enabled?: boolean;
   };
   translations: Partial<
-    Record<TemplateFieldKey, Partial<Record<TemplateLanguageCode, string | null>>>
+    Record<string, Partial<Record<TemplateLanguageCode, string | null>>>
   >;
   media: ProjectMediaRow[];
   assets: Array<{ asset_type: string | null; file_url: string; file_name: string | null }>;
@@ -50,11 +51,34 @@ export type TemplateRenderProps = {
   isPreview?: boolean;
 };
 
+export type TemplateConfigField = {
+  key: string;
+  type: "text" | "textarea" | "audio" | "gallery" | "cards";
+  label: string;
+  translatable?: boolean;
+  placeholder?: string;
+};
+
+export type TemplateConfig = {
+  fields: TemplateConfigField[];
+  gallery_sections: Array<{ key: string; label: string }>;
+  media: {
+    music: boolean;
+    coverImage: boolean;
+    ogImage: boolean;
+  };
+  features: {
+    seo: boolean;
+    qr: boolean;
+  };
+};
+
 export type TemplateComponents = {
   Layout: ComponentType<{ children: ReactNode }>;
   Invitation: ComponentType<TemplateRenderProps>;
   Album: ComponentType<TemplateRenderProps>;
   Providers: ComponentType<{ children: ReactNode; projectData: ProjectTemplateData | null; isPreview?: boolean }>;
+  config: TemplateConfig;
 };
 
 export const templateRegistry: Record<string, TemplateComponents> = {
@@ -69,6 +93,7 @@ export const templateRegistry: Record<string, TemplateComponents> = {
         </ProjectDataProvider1>
       </LanguageProvider1>
     ),
+    config: template1Config as TemplateConfig,
   },
 };
 

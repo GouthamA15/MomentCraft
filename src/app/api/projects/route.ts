@@ -116,12 +116,12 @@ export async function POST(request: Request) {
         const langObj = (translationsInput as any)[language_code];
         if (!langObj || typeof langObj !== "object") continue;
 
-        for (const field_key of TEMPLATE_FIELD_KEYS) {
+        for (const field_key of Object.keys(langObj)) {
           const raw = (langObj as any)[field_key];
           if (typeof raw !== "string") continue;
           const field_value = raw.trim();
           if (!field_value) continue;
-          if (!isTemplateFieldKey(field_key) || !isTemplateLanguageCode(language_code)) continue;
+          if (!isTemplateLanguageCode(language_code)) continue;
 
           translationRows.push({ project_id: projectId, field_key, language_code, field_value });
         }
@@ -133,40 +133,6 @@ export async function POST(request: Request) {
       if (translationsError) {
         await supabase.from("projects").delete().eq("id", projectId);
         return NextResponse.json({ error: translationsError.message }, { status: 500 });
-      }
-    }
-
-    const assetRows: Array<{ project_id: string; asset_type: string; file_url: string; file_name: string | null }> = [];
-    if (body.cover_image) {
-      assetRows.push({
-        project_id: projectId,
-        asset_type: "cover_image",
-        file_url: body.cover_image,
-        file_name: null,
-      });
-    }
-    if (body.background_music) {
-      assetRows.push({
-        project_id: projectId,
-        asset_type: "background_music",
-        file_url: body.background_music,
-        file_name: null,
-      });
-    }
-    if (body.og_image) {
-      assetRows.push({
-        project_id: projectId,
-        asset_type: "og_image",
-        file_url: body.og_image,
-        file_name: null,
-      });
-    }
-
-    if (assetRows.length > 0) {
-      const { error: assetsError } = await supabase.from("project_assets").insert(assetRows);
-      if (assetsError) {
-        await supabase.from("projects").delete().eq("id", projectId);
-        return NextResponse.json({ error: assetsError.message }, { status: 500 });
       }
     }
 

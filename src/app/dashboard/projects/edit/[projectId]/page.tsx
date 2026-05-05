@@ -87,7 +87,6 @@ export default async function EditProjectPage({ params }: PageProps) {
   ]);
 
   const assetsList = (assets ?? []) as Array<{ asset_type: string | null; file_url: string }>;
-  const coverImage = assetsList.find((a) => a.asset_type === "cover_image")?.file_url ?? null;
   const backgroundMusicAsset =
     assetsList.find((a) => a.asset_type === "background_music")?.file_url ?? null;
   const ogImageAsset = assetsList.find((a) => a.asset_type === "og_image")?.file_url ?? null;
@@ -99,8 +98,8 @@ export default async function EditProjectPage({ params }: PageProps) {
   const selectedTemplate = templates.find((t) => t.id === project.template_id) ?? null;
 
   const translations: Record<string, Record<string, string | null>> = {};
-  for (const row of (translationsRows ?? []) as Array<{ field_key: unknown; language_code: unknown; field_value: unknown }>) {
-    if (!isTemplateFieldKey(row.field_key) || !isTemplateLanguageCode(row.language_code)) continue;
+  for (const row of (translationsRows ?? []) as Array<{ field_key: string; language_code: string; field_value: unknown }>) {
+    if (!isTemplateLanguageCode(row.language_code)) continue;
     const value = typeof row.field_value === "string" ? row.field_value : null;
     translations[row.language_code] = translations[row.language_code] ?? {};
     translations[row.language_code][row.field_key] = value;
@@ -145,7 +144,6 @@ export default async function EditProjectPage({ params }: PageProps) {
           theme_color: project.theme_color,
           font_family: project.font_family,
           background_music: project.background_music || backgroundMusicAsset,
-          cover_image: coverImage,
           album_enabled: project.album_enabled ?? true,
           media: (media ?? []) as any[],
           seo_title: project.seo_title,

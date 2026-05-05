@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import fullConfig from "./template-config.json";
+import fullConfig from "./default-data.json";
 import enLabels from "./locales/en.json";
 import teLabels from "./locales/te.json";
 import hiLabels from "./locales/hi.json";
