@@ -325,8 +325,8 @@ export function CreateProjectForm({
     let finalMusicUrl = genericValues.background_music;
     const isEdit = Boolean(projectId);
 
-    // Upload music file if selected
-    if (musicFile && isEdit) {
+    // Upload music file if selected (only when we have a projectId)
+    if (musicFile && projectId) {
       setSuccess("Uploading music...");
       
       try {
