@@ -18,3 +18,70 @@
   font-family: "Playfair Display", "Noto Serif Telugu", Georgia, serif;
   color: #800000;
 }
+
+/* Invitation section: lightweight (CSS) confetti for smooth scrolling */
+.template-one-root .mc-invite-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+  contain: paint;
+}
+
+.template-one-root .mc-invite-confetti-item {
+  position: absolute;
+  top: -2.5rem;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  animation: mc-invite-fall var(--mc-confetti-dur, 6s) linear var(--mc-confetti-delay, 0s) infinite;
+}
+
+.template-one-root .mc-invite-confetti-symbol {
+  display: block;
+  font-size: 1.5rem;
+  line-height: 1;
+  opacity: 0.7;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  will-change: transform;
+  transform: translateZ(0);
+  animation: mc-invite-sway var(--mc-confetti-dur, 6s) ease-in-out var(--mc-confetti-delay, 0s) infinite;
+}
+
+@media (min-width: 768px) {
+  .template-one-root .mc-invite-confetti-symbol {
+    font-size: 1.875rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .template-one-root .mc-invite-confetti {
+    display: none;
+  }
+}
+
+@keyframes mc-invite-fall {
+  0% {
+    transform: translate3d(0, -12vh, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, 112vh, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes mc-invite-sway {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(var(--mc-confetti-dx1, 0vw), 0, 0) rotate(var(--mc-confetti-rot1, 0deg));
+  }
+  100% {
+    transform: translate3d(var(--mc-confetti-dx2, 0vw), 0, 0) rotate(var(--mc-confetti-rot2, 0deg));
+  }
+}

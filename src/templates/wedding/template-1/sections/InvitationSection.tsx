@@ -1,14 +1,41 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
 import { useLanguage } from "../LanguageContext";
 
 const FlowerConfetti = ({ isActive }: { isActive: boolean }) => {
   const symbols = ["🌸", "🌺", "💮", "🌹", "✨"];
 
+  const [mounted, setMounted] = useState(false);
+  const [particleCount, setParticleCount] = useState(6);
+
+  useEffect(() => {
+    setMounted(true);
+
+    const reduceMotionMql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mobileMql = window.matchMedia("(max-width: 640px)");
+
+    const update = () => {
+      if (reduceMotionMql.matches) {
+        setParticleCount(0);
+        return;
+      }
+      setParticleCount(mobileMql.matches ? 6 : 12);
+    };
+
+    update();
+    reduceMotionMql.addEventListener("change", update);
+    mobileMql.addEventListener("change", update);
+
+    return () => {
+      reduceMotionMql.removeEventListener("change", update);
+      mobileMql.removeEventListener("change", update);
+    };
+  }, []);
+
   const flowers = useMemo(() => {
-    return Array.from({ length: 12 }).map((_, i) => ({
+    return Array.from({ length: particleCount }).map((_, i) => ({
       id: i,
       symbol: symbols[i % symbols.length],
       left: Math.random() * 100,
@@ -16,39 +43,33 @@ const FlowerConfetti = ({ isActive }: { isActive: boolean }) => {
       duration: 4 + Math.random() * 4,
       xOffset1: Math.random() * 10 - 5,
       xOffset2: Math.random() * 20 - 10,
-      rotation: Math.random() * 360,
+      rotation1: Math.random() * 180 - 90,
+      rotation2: Math.random() * 360,
     }));
-  }, []);
+  }, [particleCount]);
+
+  if (!mounted || !isActive || particleCount === 0) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: isActive ? 1 : 0 }}
-      transition={{ duration: 0.8 }}
-      className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
-    >
-      {isActive &&
-        flowers.map((flower) => (
-          <motion.div
-            key={flower.id}
-            initial={{ y: -50, x: `${flower.left}vw`, rotate: 0 }}
-            animate={{
-              y: [-50, 400, 800],
-              x: [`${flower.left}vw`, `${flower.left + flower.xOffset1}vw`, `${flower.left + flower.xOffset2}vw`],
-              rotate: flower.rotation,
-            }}
-            transition={{
-              duration: flower.duration,
-              delay: flower.delay,
-              ease: "linear",
-              repeat: Infinity,
-            }}
-            className="absolute -top-10 text-2xl md:text-3xl drop-shadow-md opacity-80"
-          >
-            {flower.symbol}
-          </motion.div>
-        ))}
-    </motion.div>
+    <div className="mc-invite-confetti" aria-hidden="true">
+      {flowers.map((flower) => (
+        <span
+          key={flower.id}
+          className="mc-invite-confetti-item"
+          style={{
+            left: `${flower.left}%`,
+            ["--mc-confetti-dur" as any]: `${flower.duration}s`,
+            ["--mc-confetti-delay" as any]: `${flower.delay}s`,
+            ["--mc-confetti-dx1" as any]: `${flower.xOffset1}vw`,
+            ["--mc-confetti-dx2" as any]: `${flower.xOffset2}vw`,
+            ["--mc-confetti-rot1" as any]: `${flower.rotation1}deg`,
+            ["--mc-confetti-rot2" as any]: `${flower.rotation2}deg`,
+          }}
+        >
+          <span className="mc-invite-confetti-symbol">{flower.symbol}</span>
+        </span>
+      ))}
+    </div>
   );
 };
 
